@@ -2,7 +2,7 @@
   "name": "Hangman",
   "short_name": "Hangman",
   "description": "Hangman word guessing game",
-  "start_url": "/hangman.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#4ab8e8",
