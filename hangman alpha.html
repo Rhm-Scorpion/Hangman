@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════╗
+  ║                  HANGMAN GAME v1.0                       ║
+  ╠══════════════════════════════════════════════════════════╣
+  ║  Author   : Srdjan                                       ║
+  ║  Built    : March 2026                                   ║
+  ║  Stack    : Vanilla HTML + CSS + JavaScript (no libs)    ║
+  ╠══════════════════════════════════════════════════════════╣
+  ║  FEATURES                                                ║
+  ║  • 4 categories: Geography, Animals, Plants, Elements    ║
+  ║  • Geography subcategories: Countries, Cities,           ║
+  ║    Rivers, Mountains                                     ║
+  ║  • 1,200+ words across 4 difficulty levels               ║
+  ║  • Session-based scoring & leaderboard (localStorage)    ║
+  ║  • Statistics tracking (accuracy, streaks, totals)       ║
+  ║  • Daily Challenge (seeded by date)                      ║
+  ║  • Countdown 3-2-1 GO! before each game                 ║
+  ║  • Animated clouds, confetti, particles                  ║
+  ║  • Web Audio API sound effects                           ║
+  ║  • PWA — installable, works offline                      ║
+  ║  • Fully responsive: mobile, tablet, desktop             ║
+  ╠══════════════════════════════════════════════════════════╣
+  ║  DEPLOY                                                  ║
+  ║  Single file — no build step needed.                     ║
+  ║  Upload hangman.html to any static host.                 ║
+  ╚══════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4ab8e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hangman">
+<link rel="manifest" href="data:application/json,{%22name%22:%22Hangman%22,%22short_name%22:%22Hangman%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%234ab8e8%22,%22theme_color%22:%22%234ab8e8%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%234ab8e8'/%3E%3Ctext y='130' x='50' font-size='110'%3E🪢%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22}]}">
+<title>Hangman</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --sky-top:#7dd9f7;--sky-mid:#5bc8f5;--sky-bot:#4ab8e8;
+  --yellow:#f7c531;
+}
+html{height:100%;}
+body{
+  height:100%;font-family:'Fredoka One',cursive;
+  background:linear-gradient(160deg,var(--sky-top),var(--sky-mid) 50%,var(--sky-bot));
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+
+/* ══ WRAPPER ══ */
+.wrapper{
+  position:relative;width:100%;
+  height:100dvh;height:100vh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 30%, rgba(140,220,255,.4) 0%, transparent 65%),
+    linear-gradient(180deg,#6acef5 0%,#4ab8e8 40%,#38a8dc 100%);
+  overflow:hidden;display:flex;flex-direction:column;align-items:center;
+}
+
+/* ── ANIMATED CLOUDS ── */
+.clouds{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;}
+.cloud{position:absolute;background:rgba(255,255,255,.56);border-radius:50px;filter:blur(1px);will-change:transform;}
+.cloud::before,.cloud::after{content:'';position:absolute;background:inherit;border-radius:50%;}
+/* sizes */
+.c1{width:clamp(70px,16vw,130px);height:clamp(22px,5vw,38px);top:7%;}
+.c1::before{width:clamp(44px,10vw,80px);height:clamp(44px,10vw,80px);top:-65%;left:10%;}
+.c1::after {width:clamp(34px,8vw,60px); height:clamp(34px,8vw,60px); top:-52%;left:46%;}
+.c2{width:clamp(50px,12vw,100px);height:clamp(16px,3.8vw,30px);top:15%;}
+.c2::before{width:clamp(30px,7vw,56px);height:clamp(30px,7vw,56px);top:-70%;left:10%;}
+.c2::after {width:clamp(24px,5.5vw,44px);height:clamp(24px,5.5vw,44px);top:-55%;left:42%;}
+.c3{width:clamp(80px,18vw,150px);height:clamp(24px,5.5vw,44px);top:23%;}
+.c3::before{width:clamp(48px,11vw,90px);height:clamp(48px,11vw,90px);top:-62%;left:8%;}
+.c3::after {width:clamp(38px,9vw,70px); height:clamp(38px,9vw,70px); top:-50%;left:48%;}
+.c4{width:clamp(60px,14vw,110px);height:clamp(18px,4vw,32px);top:33%;}
+.c4::before{width:clamp(36px,8.5vw,66px);height:clamp(36px,8.5vw,66px);top:-65%;left:12%;}
+.c4::after {width:clamp(28px,6.5vw,50px);height:clamp(28px,6.5vw,50px);top:-52%;left:44%;}
+/* drift animations — each cloud moves left→right at different speeds */
+@keyframes drift1{from{transform:translateX(-150px);}to{transform:translateX(calc(100vw + 180px));}}
+@keyframes drift2{from{transform:translateX(-120px);}to{transform:translateX(calc(100vw + 150px));}}
+@keyframes drift3{from{transform:translateX(-180px);}to{transform:translateX(calc(100vw + 220px));}}
+@keyframes drift4{from{transform:translateX(-140px);}to{transform:translateX(calc(100vw + 170px));}}
+.c1{animation:drift1 32s linear infinite;animation-delay:-5s;}
+.c2{animation:drift2 24s linear infinite;animation-delay:-16s;}
+.c3{animation:drift3 40s linear infinite;animation-delay:-2s;}
+.c4{animation:drift4 28s linear infinite;animation-delay:-22s;}
+
+/* ══ COUNTDOWN OVERLAY ══ */
+#countdownOverlay{
+  position:absolute;inset:0;
+  background:rgba(10,30,80,.52);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;
+  backdrop-filter:blur(5px);
+}
+#countdownOverlay.show{opacity:1;pointer-events:all;}
+.cd-label{
+  font-size:clamp(13px,3.2vw,18px);color:rgba(255,255,255,.75);
+  font-family:'Nunito',sans-serif;font-weight:700;
+  letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;
+}
+.cd-number{
+  font-size:clamp(100px,30vw,200px);color:#fff;line-height:1;
+  text-shadow:0 0 60px rgba(255,220,100,.9),0 8px 0 rgba(0,0,0,.35);
+  animation:cdPop .5s cubic-bezier(.36,.07,.19,.97) both;
+}
+.cd-go{
+  font-size:clamp(60px,22vw,150px);color:var(--yellow);line-height:1;
+  text-shadow:0 0 50px rgba(255,200,0,.9),0 6px 0 #806000;
+  animation:cdGo .55s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes cdPop{0%{transform:scale(2.2);opacity:0;}60%{transform:scale(.9);}80%{transform:scale(1.05);}100%{transform:scale(1);opacity:1;}}
+@keyframes cdGo {0%{transform:scale(.3) rotate(-10deg);opacity:0;}65%{transform:scale(1.15) rotate(3deg);}85%{transform:scale(.97);}100%{transform:scale(1) rotate(0);opacity:1;}}
+
+.sparkles{position:absolute;inset:0;pointer-events:none;z-index:1;}
+.sp{
+  position:absolute;color:#fff;
+  font-size:clamp(16px,3.5vw,28px);
+  animation:twinkle 2.5s ease-in-out infinite;opacity:0;
+  text-shadow:0 0 8px rgba(255,255,255,.9);
+}
+.sp:nth-child(1){top:8%; left:14%;animation-delay:0s;}
+.sp:nth-child(2){top:16%;left:78%;animation-delay:.8s;}
+.sp:nth-child(3){top:42%;left:88%;animation-delay:1.5s;}
+.sp:nth-child(4){top:38%;left:6%; animation-delay:2.1s;}
+.sp:nth-child(5){top:22%;left:48%;animation-delay:.4s;}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(.4) rotate(0deg);}50%{opacity:1;transform:scale(1.3) rotate(20deg);}}
+
+/* ══ CONFETTI ══ */
+#confettiCanvas{position:fixed;inset:0;pointer-events:none;z-index:999;}
+
+/* ══ PARTICLE CANVAS (correct letter bursts) ══ */
+#particleCanvas{position:fixed;inset:0;pointer-events:none;z-index:998;}
+
+/* ══ SOUND TOGGLE ══ */
+.sound-btn{
+  background:rgba(255,255,255,.28);border:none;border-radius:50%;
+  width:clamp(32px,7vw,40px);height:clamp(32px,7vw,40px);
+  font-size:clamp(14px,3.5vw,18px);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);transition:background .2s,opacity .2s;
+  flex-shrink:0;-webkit-tap-highlight-color:transparent;
+}
+.sound-btn:hover{background:rgba(255,255,255,.48);}
+.sound-btn.muted{opacity:.5;}
+
+
+
+/* ══ WELCOME SCREEN ══ */
+#welcomeModal{
+  position:fixed;inset:0;
+  background:rgba(10,30,80,.65);
+  display:flex;align-items:center;justify-content:center;
+  z-index:600;backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;transition:opacity .35s;
+}
+#welcomeModal.show{opacity:1;pointer-events:all;}
+.welcome-box{
+  background:linear-gradient(145deg,#1c4fa0,#2459c7);
+  border-radius:clamp(20px,5vw,30px);
+  padding:clamp(28px,6vh,44px) clamp(24px,6vw,44px);
+  text-align:center;max-width:92%;width:clamp(280px,88vw,420px);
+  box-shadow:0 28px 70px rgba(0,0,0,.55);
+  border:3px solid rgba(255,255,255,.2);
+  animation:cardPop .4s cubic-bezier(.36,.07,.19,.97);
+  display:flex;flex-direction:column;gap:clamp(10px,2vh,16px);
+}
+.welcome-logo{font-size:clamp(52px,15vw,80px);line-height:1;}
+.welcome-title{
+  font-size:clamp(26px,7vw,38px);color:var(--yellow);
+  text-shadow:0 3px 0 #906000;letter-spacing:1px;
+}
+.welcome-sub{
+  font-size:clamp(13px,3.2vw,16px);color:rgba(255,255,255,.8);
+  font-family:'Nunito',sans-serif;font-weight:700;line-height:1.5;
+}
+.welcome-name-row{
+  display:flex;flex-direction:column;gap:8px;
+  background:rgba(255,255,255,.08);
+  border-radius:16px;padding:clamp(12px,2.5vh,18px);
+}
+.welcome-name-label{
+  font-size:clamp(11px,2.5vw,14px);color:rgba(255,255,255,.6);
+  font-family:'Nunito',sans-serif;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;
+}
+.welcome-input{
+  width:100%;padding:clamp(10px,2vh,14px) clamp(14px,3.5vw,20px);
+  border-radius:50px;border:2px solid rgba(255,255,255,.3);
+  background:rgba(255,255,255,.14);color:#fff;
+  font-family:'Fredoka One',cursive;font-size:clamp(18px,5vw,26px);
+  text-align:center;outline:none;letter-spacing:1px;
+  transition:border .2s,background .2s;
+}
+.welcome-input::placeholder{color:rgba(255,255,255,.35);}
+.welcome-input:focus{border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.22);}
+.welcome-btn-row{display:flex;flex-direction:column;gap:8px;}
+.welcome-btn-play{
+  width:100%;padding:clamp(13px,2.8vh,18px);
+  border:none;border-radius:50px;
+  background:linear-gradient(180deg,#f7676a,#ef3040);
+  font-family:'Fredoka One',cursive;font-size:clamp(18px,4.8vw,24px);
+  color:#fff;cursor:pointer;
+  box-shadow:0 6px 0 #a01020,0 10px 24px rgba(220,30,60,.4);
+  transition:transform .12s;letter-spacing:1px;
+  -webkit-tap-highlight-color:transparent;
+}
+.welcome-btn-play:hover{transform:translateY(-2px);}
+.welcome-btn-play:active{transform:translateY(3px);}
+.welcome-btn-skip{
+  background:none;border:none;
+  font-family:'Nunito',sans-serif;font-weight:700;
+  font-size:clamp(12px,2.8vw,14px);color:rgba(255,255,255,.45);
+  cursor:pointer;padding:4px;-webkit-tap-highlight-color:transparent;
+}
+.welcome-btn-skip:hover{color:rgba(255,255,255,.75);}
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);
+  display:flex;align-items:center;justify-content:center;
+  z-index:500;backdrop-filter:blur(6px);
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.modal-overlay.show{opacity:1;pointer-events:all;}
+.modal-box{
+  background:linear-gradient(135deg,#1c4fa0,#2459c7);
+  border-radius:24px;padding:32px 36px;
+  text-align:center;max-width:88%;width:360px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+  border:3px solid rgba(255,255,255,.18);
+  animation:cardPop .35s ease;
+}
+.modal-title{font-size:clamp(20px,5vw,28px);color:var(--yellow);margin-bottom:8px;text-shadow:0 2px 0 #906000;}
+.modal-sub{font-size:clamp(12px,3vw,15px);color:rgba(255,255,255,.75);font-family:'Nunito',sans-serif;font-weight:700;margin-bottom:20px;}
+.modal-input{
+  width:100%;padding:12px 16px;border-radius:50px;border:3px solid rgba(255,255,255,.3);
+  background:rgba(255,255,255,.12);color:#fff;
+  font-family:'Fredoka One',cursive;font-size:clamp(16px,4vw,22px);
+  text-align:center;outline:none;letter-spacing:1px;
+}
+.modal-input::placeholder{color:rgba(255,255,255,.4);}
+.modal-input:focus{border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.2);}
+.modal-btn{
+  margin-top:16px;width:100%;padding:13px;border:none;border-radius:50px;
+  background:linear-gradient(180deg,#f7676a,#ef3040);
+  font-family:'Fredoka One',cursive;font-size:clamp(16px,4vw,20px);color:#fff;
+  cursor:pointer;box-shadow:0 5px 0 #a01020;transition:transform .12s;
+}
+.modal-btn:hover{transform:translateY(-2px);}
+.modal-btn:active{transform:translateY(3px);}
+
+/* ══ STATS SCREEN ══ */
+#stats{justify-content:flex-start;overflow-y:auto;}
+/* ══ STATS SCREEN ══ */
+#stats{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+
+.stats-header{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:clamp(8px,1.5vh,14px) clamp(14px,3.5vw,22px) clamp(4px,1vh,8px);
+  flex-shrink:0;
+}
+.stats-title{font-size:clamp(18px,5vw,28px);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.2);}
+
+.stats-username{
+  text-align:center;flex-shrink:0;
+  padding:0 20px clamp(6px,1.5vh,12px);
+  cursor:pointer;
+}
+.stats-username .uname{
+  font-size:clamp(22px,6vw,36px);color:var(--yellow);
+  text-shadow:0 2px 0 #906000;
+}
+.stats-username .uname-label{
+  font-size:clamp(10px,2.2vw,13px);color:rgba(255,255,255,.5);
+  font-family:'Nunito',sans-serif;font-weight:700;margin-top:2px;
+}
+
+/* Grid: 2 cols on mobile, 3 on tablet+, auto rows fill space */
+.stats-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  grid-auto-rows:auto;
+  gap:clamp(6px,1.8vw,12px);
+  width:100%;
+  padding:0 clamp(10px,3vw,20px);
+  flex-shrink:0;
+}
+/* Last card spans full width if alone */
+.stat-card:last-child:nth-child(3n+1){
+  grid-column: 1 / -1;
+}
+/* If 2 cards left in last row, keep them equal */
+.stat-card:last-child:nth-child(3n+2){
+  grid-column: span 1;
+}
+
+.stat-card{
+  background:rgba(255,255,255,.14);backdrop-filter:blur(6px);
+  border-radius:clamp(12px,3vw,18px);
+  padding:clamp(10px,2.2vh,16px) clamp(8px,2vw,14px);
+  text-align:center;border:1px solid rgba(255,255,255,.2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(2px,.5vh,5px);
+  animation:slideIn .3s ease both;
+}
+.stat-icon {font-size:clamp(22px,5.5vw,34px);}
+.stat-value {
+  font-size:clamp(20px,5vw,32px);
+  color:var(--yellow);text-shadow:0 2px 0 #906000;line-height:1;
+}
+.stat-value.small{font-size:clamp(14px,3.5vw,20px);}
+.stat-label {
+  font-size:clamp(9px,2.2vw,12px);
+  color:rgba(255,255,255,.65);
+  font-family:'Nunito',sans-serif;font-weight:700;letter-spacing:.3px;
+  white-space:nowrap;
+}
+
+.stats-reset-btn{
+  margin:clamp(8px,1.8vh,14px) clamp(10px,3vw,20px) clamp(10px,2.5vh,18px);
+  padding:clamp(8px,1.5vh,11px) 24px;
+  border:2px solid rgba(255,255,255,.28);border-radius:50px;
+  background:rgba(255,255,255,.1);font-family:'Fredoka One',cursive;
+  font-size:clamp(12px,2.8vw,15px);color:rgba(255,255,255,.65);
+  cursor:pointer;transition:all .15s;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.stats-reset-btn:hover{background:rgba(255,255,255,.22);color:#fff;}
+
+/* ══ SCREENS ══ */
+.screen{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;
+  opacity:0;pointer-events:none;
+  transition:opacity .28s ease;z-index:5;
+}
+.screen.active{opacity:1;pointer-events:all;}
+
+/* ══ SHARED: PICK SCREEN (category / subcategory / difficulty) ══ */
+.pick-screen{justify-content:flex-start;}
+
+.pick-header{
+  width:100%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:clamp(10px,2vh,18px) clamp(14px,4vw,24px) clamp(6px,1.2vh,10px);
+}
+.pick-title{
+  font-size:clamp(20px,5.5vw,32px);color:#fff;
+  text-shadow:0 2px 0 rgba(0,0,0,.2);letter-spacing:1px;
+  text-align:center;flex:1;
+}
+/* Breadcrumb strip */
+.breadcrumb{
+  width:100%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;padding:0 20px clamp(6px,1.2vh,10px);
+  font-size:clamp(11px,2.6vw,15px);color:rgba(255,255,255,.7);
+  font-family:'Nunito',sans-serif;font-weight:700;
+}
+.breadcrumb span.done{color:rgba(255,255,255,.95);}
+.breadcrumb .sep{color:rgba(255,255,255,.4);}
+
+/* ── CARD GRID ── */
+.pick-grid{
+  flex:1;min-height:0;
+  width:100%;
+  display:grid;
+  gap:clamp(10px,2.5vw,18px);
+  padding:0 clamp(12px,4vw,24px) clamp(12px,2.5vh,22px);
+  /* default 2 cols */
+  grid-template-columns:1fr 1fr;
+  grid-auto-rows:1fr;
+  align-content:stretch;
+}
+/* 4-item layouts: 2x2 */
+.pick-grid.cols-2{grid-template-columns:1fr 1fr;}
+/* single row of 4 (subcat/diff on wide screens) */
+.pick-grid.cols-4{grid-template-columns:repeat(4,1fr);}
+
+.pick-card{
+  border:none;border-radius:clamp(16px,4vw,24px);
+  cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(6px,1.5vw,12px);
+  text-shadow:0 2px 4px rgba(0,0,0,.28);
+  transition:transform .15s,box-shadow .15s,outline .1s;
+  position:relative;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+  width:100%;height:100%;
+}
+.pick-card::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.22) 0%,transparent 52%);
+  border-radius:inherit;pointer-events:none;
+}
+.pick-card:hover{transform:translateY(-4px);}
+.pick-card:active{transform:translateY(2px)!important;}
+.pick-card .card-icon{font-size:clamp(64px,16vw,110px);}
+.pick-card .card-label{
+  font-size:clamp(18px,5.5vw,44px);color:#fff;
+  letter-spacing:.3px;
+  white-space:normal;       /* allow wrap */
+  word-break:break-word;
+  text-align:center;
+  line-height:1.1;
+}
+.pick-card .card-sub{display:none;}
+
+/* Category colours */
+.c-geo     {background:linear-gradient(145deg,#2e86de,#1a5cb0);box-shadow:0 6px 0 #0e3a7a,0 10px 20px rgba(30,80,180,.4);}
+.c-animals {background:linear-gradient(145deg,#e74c3c,#b02820);box-shadow:0 6px 0 #7a1410,0 10px 20px rgba(180,30,30,.4);}
+.c-plants  {background:linear-gradient(145deg,#27ae60,#1a7a40);box-shadow:0 6px 0 #0e4a22,0 10px 20px rgba(30,140,60,.4);}
+.c-elements{background:linear-gradient(145deg,#8e44ad,#6020a0);box-shadow:0 6px 0 #3a0870,0 10px 20px rgba(120,30,180,.4);}
+
+/* Subcategory colours */
+.c-countries{background:linear-gradient(145deg,#3498db,#1a6aa0);box-shadow:0 6px 0 #0e3a6a,0 10px 20px rgba(30,100,180,.4);}
+.c-cities   {background:linear-gradient(145deg,#e67e22,#b05810);box-shadow:0 6px 0 #7a3400,0 10px 20px rgba(180,80,20,.4);}
+.c-rivers   {background:linear-gradient(145deg,#16a085,#0e6a58);box-shadow:0 6px 0 #084036,0 10px 20px rgba(20,130,100,.4);}
+.c-mountains{background:linear-gradient(145deg,#7f8c8d,#566061);box-shadow:0 6px 0 #2e3839,0 10px 20px rgba(80,90,100,.4);}
+
+/* Difficulty colours */
+.c-easy  {background:linear-gradient(145deg,#2ecc71,#1a9a48);box-shadow:0 6px 0 #0e6028,0 10px 20px rgba(30,160,80,.4);}
+.c-medium{background:linear-gradient(145deg,#f7c531,#d4a010);box-shadow:0 6px 0 #8a6000,0 10px 20px rgba(200,150,20,.4);}
+.c-hard  {background:linear-gradient(145deg,#e74c3c,#b02820);box-shadow:0 6px 0 #7a1410,0 10px 20px rgba(180,30,30,.4);}
+.c-expert{background:linear-gradient(145deg,#9b59e8,#6020b0);box-shadow:0 6px 0 #3a0870,0 10px 20px rgba(120,30,180,.4);}
+
+/* ══ TITLE BADGE ══ */
+.title-badge{
+  background:linear-gradient(180deg,#2a62c8,#1a4aaa);
+  border-radius:clamp(16px,4vw,26px);
+  padding:clamp(8px,1.8vw,14px) clamp(20px,5.5vw,40px);
+  border:clamp(2px,.5vw,3px) solid rgba(100,160,255,.6);
+  box-shadow:
+    0 clamp(5px,1.2vw,8px) 0 #0a2560,
+    0 12px 32px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.25);
+  display:flex;align-items:center;gap:clamp(8px,2vw,14px);flex-shrink:0;
+}
+.title-icon{font-size:clamp(24px,6.5vw,42px);filter:drop-shadow(0 2px 6px rgba(0,0,0,.4));}
+.title-text{
+  font-size:clamp(28px,8.5vw,52px);
+  color:var(--yellow);
+  text-shadow:0 3px 0 #a06000,0 6px 16px rgba(0,0,0,.4);
+  letter-spacing:3px;white-space:nowrap;
+}
+.gear{
+  font-size:clamp(18px,4.5vw,28px);margin-left:4px;
+  cursor:pointer;transition:transform .5s;opacity:.9;
+}
+.gear:hover{transform:rotate(90deg);}
+
+/* ══ GALLOWS SCENE ══ */
+.scene{
+  position:relative;width:100%;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+/* Radial glow behind gallows */
+.scene::before{
+  content:'';
+  position:absolute;
+  inset:-10% -5%;
+  background:radial-gradient(ellipse 70% 60% at 50% 55%, rgba(255,255,255,.28) 0%, transparent 70%);
+  pointer-events:none;z-index:0;
+}
+.gallows-svg{
+  width:100%;position:relative;z-index:1;
+  filter:drop-shadow(0 10px 24px rgba(0,0,0,.22)) drop-shadow(0 2px 6px rgba(0,0,0,.15));
+}
+.skull-side{
+  position:absolute;left:0;bottom:6px;z-index:2;
+  font-size:clamp(28px,8vw,52px);
+  filter:drop-shadow(1px 2px 3px rgba(0,0,0,.25));
+}
+.blocks-side{position:absolute;right:2%;bottom:0;z-index:2;}
+.blocks-box{
+  width:clamp(52px,15vw,82px);height:clamp(38px,11vw,60px);
+  background:linear-gradient(160deg,#e0a040,#c07010);
+  border-radius:8px 8px 4px 4px;
+  box-shadow:0 5px 0 #7a4a00,0 8px 16px rgba(0,0,0,.3);
+  display:flex;align-items:center;justify-content:center;
+  gap:3px;flex-wrap:wrap;padding:4px;
+}
+.block{
+  width:clamp(16px,4.5vw,24px);height:clamp(16px,4.5vw,24px);
+  border-radius:5px;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(10px,2.8vw,14px);color:#fff;font-weight:900;
+  box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.3);
+  text-shadow:0 1px 2px rgba(0,0,0,.5);
+}
+.bl-blue  {background:linear-gradient(160deg,#4a8fff,#2060e0);}
+.bl-green {background:linear-gradient(160deg,#3edc7c,#20a040);}
+.bl-red   {background:linear-gradient(160deg,#ff5555,#d01818);}
+.bl-purple{background:linear-gradient(160deg,#b060f0,#8020d0);}
+
+/* ══ MENU BUTTONS ══ */
+.btn-main{
+  width:100%;
+  padding:clamp(13px,2.4vh,19px) clamp(18px,4.5vw,30px);
+  border:none;border-radius:50px;font-family:'Fredoka One',cursive;
+  font-size:clamp(17px,4.5vw,24px);color:#fff;letter-spacing:.8px;cursor:pointer;
+  white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:10px;
+  text-shadow:0 2px 5px rgba(0,0,0,.28);
+  transition:transform .12s,box-shadow .12s,filter .12s;
+  position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;
+}
+.btn-main::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.22) 0%,transparent 52%);
+  border-radius:inherit;pointer-events:none;
+}
+.btn-main::before{
+  content:'';position:absolute;inset:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
+  border-radius:inherit;pointer-events:none;
+}
+.btn-main:active{transform:translateY(4px)!important;filter:brightness(.9);}
+
+.btn-play {
+  background:linear-gradient(180deg,#ff6b6b,#e82030);
+  box-shadow:0 6px 0 #9a0010,0 10px 28px rgba(220,20,50,.45);
+}
+.btn-daily{
+  background:linear-gradient(180deg,#c070f8,#8830e0);
+  box-shadow:0 6px 0 #4a0898,0 10px 28px rgba(130,40,220,.45);
+}
+.btn-lb-m {
+  background:linear-gradient(180deg,#40b0a0,#208880);
+  box-shadow:0 6px 0 #0a5040,0 10px 28px rgba(20,120,100,.45);
+}
+.btn-stats-m{
+  background:linear-gradient(180deg,#5090e8,#2868d0);
+  box-shadow:0 6px 0 #0a3888,0 10px 28px rgba(30,80,200,.45);
+}
+.btn-play:hover {transform:translateY(-3px);box-shadow:0 9px 0 #9a0010,0 16px 36px rgba(220,20,50,.55);}
+.btn-daily:hover{transform:translateY(-3px);box-shadow:0 9px 0 #4a0898,0 16px 36px rgba(130,40,220,.55);}
+.btn-lb-m:hover {transform:translateY(-3px);box-shadow:0 9px 0 #0a5040,0 16px 36px rgba(20,120,100,.55);}
+.btn-stats-m:hover{transform:translateY(-3px);box-shadow:0 9px 0 #0a3888,0 16px 36px rgba(30,80,200,.55);}
+
+.btn-row{display:flex;gap:clamp(8px,2.5vw,16px);justify-content:center;}
+.back-btn{
+  background:rgba(255,255,255,.28);border:none;border-radius:50%;
+  width:clamp(36px,8vw,46px);height:clamp(36px,8vw,46px);
+  font-size:clamp(15px,4vw,22px);cursor:pointer;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);transition:background .2s;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.back-btn:hover{background:rgba(255,255,255,.48);}
+.spacer-btn{width:clamp(36px,8vw,46px);height:clamp(36px,8vw,46px);flex-shrink:0;}
+
+/* ══ STREAK ══ */
+.streak-wrap{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.22);
+  border:2px solid rgba(255,255,255,.45);
+  border-radius:50px;
+  padding:clamp(6px,1.2vh,9px) clamp(16px,4vw,26px);
+  font-size:clamp(14px,3.5vw,19px);color:#fff;
+  backdrop-filter:blur(4px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3);
+}
+.streak-wrap.bump{animation:streakBump .4s ease;}
+@keyframes streakBump{0%{transform:scale(1);}50%{transform:scale(1.22);}100%{transform:scale(1);}}
+
+/* ══ MENU SCREEN ══ */
+#menu{justify-content:space-between;padding:clamp(12px,2.5vh,24px) 0 clamp(16px,3.5vh,30px);}
+.menu-title-row{display:flex;justify-content:center;flex-shrink:0;}
+.scene-wrap{
+  flex:1;min-height:0;
+  max-height:48vh;
+  display:flex;align-items:center;justify-content:center;
+  width:100%;padding:0 8%;
+}
+.scene{max-width:340px;}
+.menu-btns-row{flex-shrink:0;display:flex;justify-content:center;width:100%;}
+.btns{width:clamp(270px,88%,430px);display:flex;flex-direction:column;gap:clamp(9px,1.8vh,15px);}
+
+/* ══ GAME SCREEN ══ */
+#game{padding:0;justify-content:flex-start;}
+.game-inner{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;overflow:hidden;}
+.game-header{width:100%;padding:clamp(10px,2vh,16px) clamp(12px,3vw,20px) clamp(6px,1vh,10px);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.lives-row{display:flex;gap:clamp(2px,1vw,5px);flex-wrap:wrap;justify-content:flex-end;}
+.heart{font-size:clamp(14px,3.5vw,22px);transition:transform .3s;}
+.heart.lost{filter:grayscale(1);opacity:.35;transform:scale(.8);}
+.category-badge{background:rgba(255,255,255,.28);border-radius:20px;padding:clamp(3px,.8vh,6px) clamp(10px,2.5vw,16px);font-size:clamp(10px,2.5vw,14px);color:#fff;letter-spacing:.8px;backdrop-filter:blur(4px);white-space:nowrap;max-width:48%;overflow:hidden;text-overflow:ellipsis;}
+/* Header lives: hidden on mobile (shown in meta row below), visible on desktop in header */
+.lives-header{display:none;}
+/* Meta row below gallows on mobile */
+.game-meta-mobile{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  padding:0 clamp(12px,3vw,18px) clamp(2px,.5vh,4px);flex-shrink:0;
+}
+.score-badge{background:rgba(255,255,255,.25);border-radius:20px;padding:clamp(3px,.6vh,6px) clamp(12px,3vw,18px);font-size:clamp(12px,3vw,16px);color:#fff;backdrop-filter:blur(4px);}
+.game-gallows-wrap{
+  flex:1;min-height:0;
+  display:flex;align-items:center;justify-content:center;
+  width:100%;
+  padding:clamp(4px,1vh,10px) 0;
+}
+/* SVG scales by BOTH width and height — picks whichever is smaller */
+.game-gallows{
+  width:clamp(180px,60vw,340px);
+  max-height:100%;
+  /* Also constrain by available height so it fills vertically too */
+  height:100%;
+  max-width:min(60vw,70vh);
+}
+
+/* Doll shake */
+.doll-shake{animation:dollShake .5s ease;}
+@keyframes dollShake{0%{transform:translateX(0) rotate(0);}15%{transform:translateX(-6px) rotate(-4deg);}30%{transform:translateX(6px) rotate(4deg);}45%{transform:translateX(-5px) rotate(-3deg);}60%{transform:translateX(5px) rotate(3deg);}75%{transform:translateX(-3px) rotate(-1deg);}100%{transform:translateX(0) rotate(0);}}
+
+/* Timer bar */
+.timer-bar-wrap{width:90%;max-width:480px;height:8px;background:rgba(255,255,255,.2);border-radius:8px;flex-shrink:0;margin:0 auto 4px;overflow:hidden;}
+.timer-bar{height:100%;border-radius:8px;background:linear-gradient(90deg,#4cd870,#f7c531,#ef3040);transition:width .5s linear;}
+
+.word-display{display:flex;gap:clamp(5px,1.8vw,10px);flex-wrap:wrap;justify-content:center;padding:clamp(6px,1.2vh,12px) clamp(14px,4vw,22px);flex-shrink:0;}
+.letter-slot{width:clamp(24px,6.5vw,40px);height:clamp(32px,8.5vw,48px);border-bottom:3px solid rgba(255,255,255,.8);display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;font-size:clamp(17px,4.8vw,28px);color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.2);transition:all .3s;}
+.letter-slot.revealed{animation:popIn .35s cubic-bezier(.36,.07,.19,.97);}
+@keyframes popIn{0%{transform:scale(.3) rotate(-10deg);opacity:0;}60%{transform:scale(1.3) rotate(3deg);}85%{transform:scale(.95);}100%{transform:scale(1) rotate(0);opacity:1;}}
+
+.wrong-hint{color:rgba(255,255,255,.72);font-family:'Nunito',sans-serif;font-weight:700;font-size:clamp(11px,2.6vw,14px);text-align:center;min-height:20px;margin-bottom:clamp(2px,.5vh,5px);flex-shrink:0;padding:0 12px;}
+.keyboard{width:98%;max-width:500px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(3px,.8vw,6px);padding-bottom:clamp(6px,1.5vh,12px);flex-shrink:0;}
+.key-row{display:flex;justify-content:center;gap:clamp(3px,.8vw,6px);}
+.key{min-width:0;flex:1;max-width:clamp(28px,8.5vw,40px);height:clamp(30px,8vw,42px);background:linear-gradient(180deg,#fff,#e0eaff);border:none;border-radius:clamp(5px,1.5vw,9px);font-family:'Fredoka One',cursive;font-size:clamp(11px,3vw,16px);color:#2459c7;cursor:pointer;box-shadow:0 3px 0 #a8bedd;transition:all .1s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+.key:hover:not(:disabled){background:linear-gradient(180deg,#dceaff,#c0d4ff);transform:translateY(-1px);}
+.key:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #a8bedd;}
+.key:disabled{opacity:.3;cursor:not-allowed;transform:none;}
+.key.correct{background:linear-gradient(180deg,#9ef0b0,#4cd870)!important;color:#fff;box-shadow:0 3px 0 #2a8040;}
+.key.wrong{background:linear-gradient(180deg,#f09090,#e03838)!important;color:#fff;box-shadow:0 3px 0 #a01818;}
+
+/* ══ RESULT OVERLAY ══ */
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s;z-index:100;backdrop-filter:blur(6px);}
+.overlay.show{opacity:1;pointer-events:all;}
+.result-card{background:linear-gradient(135deg,#1c4fa0,#2459c7);border-radius:clamp(16px,4vw,28px);padding:clamp(20px,5vh,36px) clamp(28px,8vw,50px);text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);border:3px solid rgba(255,255,255,.18);animation:cardPop .4s cubic-bezier(.36,.07,.19,.97);max-width:90%;}
+@keyframes cardPop{0%{transform:scale(.5) rotate(-3deg);opacity:0;}75%{transform:scale(1.06) rotate(1deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
+.result-emoji{font-size:clamp(44px,13vw,68px);margin-bottom:8px;}
+.result-title{font-size:clamp(24px,7vw,36px);color:var(--yellow);text-shadow:0 2px 0 #906000;margin-bottom:4px;}
+.result-word{font-size:clamp(13px,3.5vw,17px);color:rgba(255,255,255,.8);margin-bottom:6px;font-family:'Nunito',sans-serif;font-weight:700;}
+.result-word span{color:#fff;font-size:clamp(16px,4.5vw,22px);}
+.result-score-line{font-size:clamp(14px,3.8vw,19px);color:rgba(255,255,255,.9);margin-bottom:clamp(14px,3vh,22px);}
+.result-score-line strong{color:var(--yellow);}
+.result-streak{font-size:clamp(13px,3.2vw,16px);color:rgba(255,200,80,.9);margin-bottom:clamp(14px,3vh,22px);}
+.result-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.btn-again{background:linear-gradient(180deg,#f7676a,#ef3040);border:none;border-radius:50px;padding:clamp(10px,2vh,14px) clamp(22px,6vw,36px);font-family:'Fredoka One',cursive;font-size:clamp(16px,4vw,21px);color:#fff;cursor:pointer;box-shadow:0 5px 0 #a01020;transition:transform .12s;-webkit-tap-highlight-color:transparent;}
+.btn-again:hover{transform:translateY(-2px);}
+.btn-again:active{transform:translateY(3px);}
+.btn-lb-result{background:linear-gradient(180deg,#3a9ea0,#1f7070);border:none;border-radius:50px;padding:clamp(10px,2vh,14px) clamp(16px,4vw,26px);font-family:'Fredoka One',cursive;font-size:clamp(14px,3.5vw,18px);color:#fff;cursor:pointer;box-shadow:0 4px 0 #0d4040;transition:transform .12s;-webkit-tap-highlight-color:transparent;}
+.btn-lb-result:hover{transform:translateY(-2px);}
+
+/* ══ HISTORY SCREEN ══ */
+#history{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.hist-header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:clamp(10px,2vh,16px) clamp(14px,3.5vw,22px) clamp(6px,1.2vh,10px);flex-shrink:0;}
+.hist-title{font-size:clamp(18px,5vw,28px);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.2);}
+.hist-search-wrap{
+  width:100%;padding:0 clamp(12px,3.5vw,22px) clamp(8px,1.5vh,12px);flex-shrink:0;
+  display:flex;gap:10px;align-items:center;
+}
+.hist-input{
+  flex:1;padding:clamp(9px,1.8vh,13px) clamp(14px,3.5vw,20px);
+  border-radius:50px;border:2px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.18);backdrop-filter:blur(6px);
+  font-family:'Fredoka One',cursive;font-size:clamp(14px,3.5vw,19px);
+  color:#fff;outline:none;transition:border .2s;
+}
+.hist-input::placeholder{color:rgba(255,255,255,.45);}
+.hist-input:focus{border-color:rgba(255,255,255,.75);background:rgba(255,255,255,.26);}
+.hist-search-btn{
+  padding:clamp(9px,1.8vh,13px) clamp(16px,4vw,22px);border:none;border-radius:50px;
+  background:linear-gradient(180deg,#f7676a,#ef3040);
+  font-family:'Fredoka One',cursive;font-size:clamp(13px,3vw,17px);color:#fff;
+  cursor:pointer;box-shadow:0 4px 0 #a01020;transition:transform .12s;
+  white-space:nowrap;-webkit-tap-highlight-color:transparent;
+}
+.hist-search-btn:hover{transform:translateY(-2px);}
+.hist-search-btn:active{transform:translateY(2px);}
+.hist-empty{text-align:center;color:rgba(255,255,255,.6);font-size:clamp(14px,3.5vw,18px);padding:40px 20px;line-height:1.6;}
+.hist-player-title{
+  text-align:center;padding:0 20px clamp(6px,1.2vh,10px);flex-shrink:0;
+  font-size:clamp(18px,5vw,28px);color:var(--yellow);
+  text-shadow:0 2px 0 #906000;
+}
+.hist-list{width:100%;padding:0 clamp(10px,3vw,20px) 20px;display:flex;flex-direction:column;gap:clamp(6px,1.5vw,10px);}
+.hist-row{
+  background:rgba(255,255,255,.14);backdrop-filter:blur(6px);
+  border-radius:16px;padding:clamp(10px,2vw,14px) clamp(12px,3vw,18px);
+  display:flex;align-items:center;gap:12px;
+  border:1px solid rgba(255,255,255,.22);
+  animation:slideIn .3s ease both;
+}
+.hist-num{font-size:clamp(16px,4vw,22px);min-width:28px;text-align:center;color:rgba(255,255,255,.5);flex-shrink:0;}
+.hist-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.hist-cat{font-size:clamp(10px,2.4vw,13px);color:rgba(255,255,255,.6);font-family:'Nunito',sans-serif;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.hist-words{font-size:clamp(14px,3.8vw,19px);color:#fff;}
+.hist-date{font-size:clamp(9px,2vw,12px);color:rgba(255,255,255,.4);font-family:'Nunito',sans-serif;font-weight:700;}
+.hist-score-wrap{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;gap:1px;}
+.hist-score{font-size:clamp(20px,5vw,28px);color:var(--yellow);text-shadow:0 2px 0 #906000;line-height:1;}
+.hist-score-lbl{font-size:clamp(9px,2vw,11px);color:rgba(255,255,255,.5);font-family:'Nunito',sans-serif;font-weight:700;text-transform:uppercase;}
+
+/* ══ LEADERBOARD ══ */
+#leaderboard{justify-content:flex-start;overflow-y:auto;}
+.lb-header{width:100%;display:flex;align-items:center;justify-content:space-between;padding:clamp(10px,2vh,16px) clamp(14px,3.5vw,22px) clamp(4px,.8vh,8px);flex-shrink:0;}
+.lb-title{font-size:clamp(18px,5vw,28px);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.2);}
+.lb-filter{display:flex;gap:6px;padding:0 clamp(10px,3vw,20px) 8px;flex-wrap:wrap;flex-shrink:0;}
+.lb-filter-btn{padding:6px 14px;border:2px solid rgba(255,255,255,.35);border-radius:50px;background:rgba(255,255,255,.15);backdrop-filter:blur(4px);font-family:'Fredoka One',cursive;font-size:clamp(11px,2.5vw,14px);color:#fff;cursor:pointer;transition:all .15s;white-space:nowrap;-webkit-tap-highlight-color:transparent;}
+.lb-filter-btn.active{background:rgba(255,255,255,.4);border-color:#fff;color:#1a1a2e;}
+.lb-list{width:100%;padding:0 clamp(10px,3vw,20px) 20px;display:flex;flex-direction:column;gap:clamp(6px,1.5vw,10px);}
+
+.lb-row{
+  background:rgba(255,255,255,.14);backdrop-filter:blur(6px);
+  border-radius:16px;padding:clamp(10px,2vw,14px) clamp(12px,3vw,18px);
+  display:flex;align-items:center;gap:clamp(10px,2.5vw,16px);
+  border:1px solid rgba(255,255,255,.22);
+  animation:slideIn .3s ease both;
+}
+@keyframes slideIn{from{transform:translateX(-20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* Medal / rank */
+.lb-rank{
+  font-size:clamp(22px,5.5vw,30px);
+  min-width:clamp(32px,7vw,42px);
+  text-align:center;flex-shrink:0;
+}
+
+
+/* Middle: category + word + date */
+.lb-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.lb-cat{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  font-size:clamp(10px,2.4vw,13px);
+  color:rgba(255,255,255,.65);
+  font-family:'Nunito',sans-serif;font-weight:700;
+  letter-spacing:.3px;
+}
+.lb-word{
+  font-size:clamp(15px,4vw,21px);
+  color:#fff;font-weight:bold;
+  letter-spacing:.5px;
+}
+.lb-date-line{
+  font-size:clamp(9px,2vw,12px);
+  color:rgba(255,255,255,.4);
+  font-family:'Nunito',sans-serif;font-weight:700;
+}
+.lb-diff-badge{
+  padding:2px 9px;border-radius:50px;
+  font-size:clamp(9px,2vw,11px);color:#fff;
+  font-family:'Fredoka One',cursive;letter-spacing:.5px;
+  flex-shrink:0;
+}
+.lb-diff-badge.easy  {background:rgba(46,160,64,.75);}
+.lb-diff-badge.medium{background:rgba(212,160,16,.85);}
+.lb-diff-badge.hard  {background:rgba(200,30,50,.75);}
+.lb-diff-badge.expert{background:rgba(130,30,180,.75);}
+
+
+/* Right: score block */
+.lb-score-wrap{
+  display:flex;flex-direction:column;align-items:flex-end;
+  flex-shrink:0;gap:1px;
+}
+.lb-score{
+  font-size:clamp(22px,5.5vw,32px);
+  color:var(--yellow);
+  text-shadow:0 2px 0 #906000;
+  line-height:1;
+}
+.lb-score-label{
+  font-size:clamp(9px,2vw,11px);
+  color:rgba(255,255,255,.5);
+  font-family:'Nunito',sans-serif;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;
+}
+
+.lb-empty{text-align:center;color:rgba(255,255,255,.6);font-size:clamp(14px,3.5vw,18px);padding:40px 20px;}
+
+/* ══ TABLET 768–1023 ══ */
+@media (min-width:768px) and (max-width:1023px){
+  .pick-grid.cols-2{grid-template-columns:repeat(2,1fr);}
+  .pick-grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  .pick-card .card-icon{font-size:clamp(52px,11vw,72px);}
+  .pick-card .card-label{font-size:clamp(20px,5vw,30px);}
+  .scene{max-width:360px;}
+  .game-gallows{width:clamp(240px,42vw,380px);max-width:min(42vw,65vh);}
+  .keyboard{max-width:580px;}
+  .key{max-width:50px;height:50px;font-size:18px;}
+  .letter-slot{width:44px;height:54px;font-size:30px;}
+
+  /* ── MENU tablet: limit scene height so buttons stay close ── */
+  #menu{
+    padding: clamp(10px,1.5vh,18px) 0 clamp(12px,2vh,22px);
+    justify-content: space-between;
+  }
+  .scene-wrap{
+    flex: 0 0 auto;          /* don't grow infinitely */
+    max-height: 38vh;        /* cap scene at 38% of screen height */
+    padding: 0 15%;
+  }
+  .scene{ max-width: 320px; }
+  .btns{
+    width: clamp(280px,72%,520px);
+    gap: clamp(8px,1.4vh,14px);
+  }
+  .btn-main  { font-size: clamp(17px,3.2vw,22px); padding: clamp(11px,1.8vh,15px) 20px; }
+  .btn-small { font-size: clamp(13px,2.2vw,16px); }
+
+  /* Stats: 3 cols on tablet */
+  .stats-grid{grid-template-columns:repeat(3,1fr);gap:12px;}
+  .stat-icon {font-size:clamp(28px,6vw,40px);}
+  .stat-value{font-size:clamp(24px,5.5vw,36px);}
+  .stat-label{font-size:clamp(11px,2.4vw,14px);}
+}
+
+/* ══ DESKTOP ≥ 1024 ══ */
+@media (min-width:1024px){
+  html,body{overflow:hidden;height:100%;}
+  body{background:linear-gradient(135deg,#1a3a6e 0%,#0e2248 50%,#12133a 100%);}
+  .wrapper{width:min(1280px,96vw);height:min(760px,92vh);border-radius:26px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.07);}
+  .menu-scene-col{flex:0 0 50%;}
+  .scene{max-width:380px;}
+  .btns{max-width:400px;gap:16px;}
+  .btn-main{font-size:22px;padding:15px 24px;}
+  .btn-small{font-size:15px;padding:14px 10px;}
+  .c3{width:80px;height:22px;top:12%;left:56%;}.c4{width:70px;height:20px;top:8%;right:6%;left:auto;}.c1{width:72px;top:6%;left:5%;}.c2{display:none;}
+
+  /* Menu desktop */
+  #menu{flex-direction:column;justify-content:flex-start;padding:0;align-items:center;}
+  .menu-title-row{width:100%;justify-content:center;padding:22px 0 0;flex-shrink:0;}
+  .title-text{font-size:38px;}.title-icon{font-size:32px;}.gear{font-size:22px;}
+  .menu-body-desktop{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;padding:10px 4% 28px;}
+  .menu-scene-col{flex:0 0 48%;height:100%;display:flex;align-items:center;justify-content:center;padding:0 2% 0 3%;}
+  .scene-wrap{width:100%;height:auto;flex:none;padding:0;display:flex;align-items:center;justify-content:center;}
+  .scene{max-width:340px;width:100%;}
+  .menu-btns-col{flex:1;height:100%;display:flex;align-items:center;justify-content:center;padding:0 4% 0 2%;}
+  .menu-btns-row{width:100%;justify-content:center;}
+  .btns{width:100%;max-width:380px;gap:14px;}
+  .btn-main{font-size:21px;padding:14px 22px;}
+  .btn-small{font-size:14px;padding:13px 10px;}
+  .btn-row{gap:12px;}
+
+  /* Pick screens desktop: 2-col split */
+  .pick-screen{flex-direction:column;}
+  .pick-header{padding:20px 28px 8px;}
+  .pick-title{font-size:30px;}
+  .breadcrumb{font-size:14px;padding:0 28px 10px;}
+  /* 2 cols for 4-card grids, 4 cols for subcat/diff (fewer items) */
+  .pick-grid{padding:0 28px 24px;gap:16px;}
+  .pick-grid.cols-2{grid-template-columns:repeat(2,1fr);}
+  .pick-grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  .pick-card .card-icon{font-size:80px;}
+  .pick-card .card-label{font-size:36px;}
+  .pick-card .card-sub{display:none;}
+
+  /* Game desktop 2-col */
+  .game-inner{flex-direction:row;height:100%;overflow:hidden;}
+  .game-col-left{flex:0 0 44%;display:flex;flex-direction:column;align-items:center;border-right:1px solid rgba(255,255,255,.14);padding:0 0 16px;}
+  .game-col-right{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 14px 14px;gap:4px;}
+  .game-header{border-bottom:1px solid rgba(255,255,255,.1);padding:14px 18px 12px;}
+  .game-gallows-wrap{flex:none;padding:8px;}
+  .game-gallows{width:min(280px,82%);}
+  .game-meta-desktop{display:flex;flex-direction:column;align-items:center;gap:8px;padding-bottom:8px;}
+  .lives-row{justify-content:center;}.heart{font-size:22px;}.score-badge{font-size:15px;}
+  .category-badge{font-size:15px;padding:7px 16px;margin-bottom:4px;}
+  .word-display{padding:10px 10px 14px;gap:10px;}
+  .letter-slot{width:44px;height:52px;font-size:30px;}
+  .wrong-hint{font-size:14px;margin-bottom:5px;}
+  .keyboard{max-width:500px;gap:7px;}
+  .key{max-width:42px;height:44px;font-size:16px;border-radius:8px;}
+  .key-row{gap:6px;}
+  .game-meta-mobile{display:none;}.lives-header{display:none;}
+
+  #leaderboard .lb-list{max-width:700px;margin:0 auto;width:100%;}
+  /* Stats desktop: 5 cols, compact cards */
+  #stats .stats-grid{grid-template-columns:repeat(5,1fr);max-width:900px;margin:0 auto;gap:14px;}
+  #stats .stat-icon {font-size:32px;}
+  #stats .stat-value{font-size:28px;}
+  #stats .stat-label{font-size:12px;}
+  #stats .stats-username .uname{font-size:30px;}
+  #stats .stats-reset-btn{display:block;margin:12px auto 18px;}
+}
+
+@media (max-width:359px){
+  .title-text{font-size:22px;}.btn-main{font-size:15px;padding:9px 14px;}
+  .key{height:28px;font-size:11px;}.letter-slot{width:22px;height:30px;font-size:16px;}
+  .pick-card .card-icon{font-size:28px;}
+  .pick-card .card-label{font-size:13px;}
+}
+@media (max-height:480px) and (max-width:1023px){
+  #menu{flex-direction:row;flex-wrap:wrap;padding:6px;justify-content:space-around;}
+  .menu-title-row{width:100%;padding:4px 0 2px;}
+  .scene-wrap{flex:none;width:40%;height:auto;padding:0;}
+  .menu-btns-row{width:56%;}.btns{width:100%;gap:5px;}
+  .btn-main{font-size:13px;padding:7px 12px;}
+  .pick-grid{gap:6px;padding:0 8px 8px;}
+  /* In landscape: keep 2 cols for category (long names), 4 only for short-label grids */
+  .pick-grid.cols-2{grid-template-columns:repeat(2,1fr);}
+  .pick-grid.cols-4{grid-template-columns:repeat(4,1fr);}
+  .pick-card .card-icon{font-size:clamp(28px,8vw,44px);}
+  .pick-card .card-label{font-size:clamp(13px,4vw,18px);}
+  .pick-header{padding:6px 12px 4px;}
+  .pick-title{font-size:clamp(16px,4vw,22px);}
+  .breadcrumb{padding:0 12px 4px;font-size:11px;}
+  .game-inner{flex-direction:row;}
+  .game-gallows-wrap{flex:none;padding:0;}
+  .game-gallows{width:min(190px,36vw);}
+  .letter-slot{width:22px;height:30px;font-size:17px;}
+  .key{height:26px;font-size:11px;}.keyboard{gap:3px;}.key-row{gap:3px;}
+  .game-header{padding:6px 10px 4px;}
+}
+</style>
+</head>
+<body>
+<canvas id="confettiCanvas"></canvas>
+  <!-- ══ COUNTDOWN OVERLAY ══ -->
+  <div id="countdownOverlay">
+    <div class="cd-label">Get Ready!</div>
+  </div>
+
+<canvas id="particleCanvas"></canvas>
+
+<!-- WELCOME SCREEN (first run only) -->
+<div id="welcomeModal">
+  <div class="welcome-box">
+    <div class="welcome-logo">🪢</div>
+    <div class="welcome-title">Welcome!</div>
+    <div class="welcome-sub">Guess words, earn points,<br>beat your own records!</div>
+    <div class="welcome-name-row">
+      <div class="welcome-name-label">Your name (optional)</div>
+      <input class="welcome-input" id="welcomeInput" type="text" maxlength="16"
+        placeholder="Random" autocomplete="off">
+    </div>
+    <div class="welcome-btn-row">
+      <button class="welcome-btn-play" onclick="startFromWelcome()">▶ Start Playing!</button>
+      <button class="welcome-btn-skip" onclick="startFromWelcome()">Skip — play as Random</button>
+    </div>
+  </div>
+</div>
+
+<!-- USERNAME MODAL -->
+<div class="modal-overlay" id="usernameModal">
+  <div class="modal-box">
+    <div class="modal-title">👤 Your Name</div>
+    <div class="modal-sub">Your name is <strong style="color:var(--yellow)">Random</strong> by default — change it if you want 🎮</div>
+    <input class="modal-input" id="usernameInput" type="text" maxlength="16" placeholder="Enter name (default: Random)" autocomplete="off">
+    <button class="modal-btn" onclick="saveUsername()">Let's Play! ▶</button>
+  </div>
+</div>
+<div class="wrapper">
+  <div class="clouds"><div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div><div class="cloud c4"></div></div>
+  <div class="sparkles"><div class="sp">✦</div><div class="sp">✦</div><div class="sp">✦</div><div class="sp">✦</div><div class="sp">✦</div></div>
+
+  <!-- ══════════ MENU ══════════ -->
+  <div class="screen active" id="menu">
+    <div class="menu-title-row"><div class="title-badge"><div class="title-icon">🪢</div><div class="title-text">HANGMAN</div><div class="gear">⚙️</div></div></div>
+    <!-- Mobile/Tablet -->
+    <div class="scene-wrap" id="mobileSceneWrap">
+      <div class="scene">
+        <div class="skull-side">💀</div>
+        <svg class="gallows-svg" viewBox="0 0 300 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="woodH" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0b040"/>
+      <stop offset="40%" stop-color="#d4881a"/>
+      <stop offset="100%" stop-color="#a05e0a"/>
+    </linearGradient>
+    <linearGradient id="woodV" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e8a030"/>
+      <stop offset="50%" stop-color="#c87818"/>
+      <stop offset="100%" stop-color="#9a5808"/>
+    </linearGradient>
+    <linearGradient id="woodBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8a030"/>
+      <stop offset="100%" stop-color="#9a5808"/>
+    </linearGradient>
+    <filter id="woodShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="rgba(0,0,0,0.35)"/>
+    </filter>
+  </defs>
+
+  <!-- Base platform -->
+  <rect x="45" y="218" width="210" height="24" rx="8" fill="url(#woodBase)" filter="url(#woodShadow)"/>
+  <rect x="50" y="218" width="200" height="10" rx="5" fill="rgba(255,200,80,.3)"/>
+  <rect x="45" y="228" width="210" height="14" rx="0" fill="rgba(0,0,0,.15)" rx="8"/>
+
+  <!-- Vertical post -->
+  <rect x="96" y="28" width="26" height="194" rx="8" fill="url(#woodV)" filter="url(#woodShadow)"/>
+  <rect x="100" y="30" width="10" height="190" rx="5" fill="rgba(255,200,80,.25)"/>
+
+  <!-- Horizontal beam -->
+  <rect x="94" y="22" width="140" height="26" rx="8" fill="url(#woodH)" filter="url(#woodShadow)"/>
+  <rect x="98" y="24" width="132" height="10" rx="5" fill="rgba(255,220,100,.3)"/>
+
+  <!-- Diagonal brace -->
+  <line x1="122" y1="48" x2="176" y2="106" stroke="#9a5808" stroke-width="16" stroke-linecap="round"/>
+  <line x1="122" y1="48" x2="176" y2="106" stroke="#d4881a" stroke-width="10" stroke-linecap="round"/>
+  <line x1="124" y1="50" x2="174" y2="104" stroke="rgba(255,200,80,.3)" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Rope -->
+  <line x1="214" y1="46" x2="214" y2="82" stroke="#c8a060" stroke-width="5" stroke-linecap="round"/>
+  <!-- Hook ring -->
+  <circle cx="214" cy="88" r="9" fill="none" stroke="#d4a832" stroke-width="4"/>
+  <circle cx="214" cy="88" r="5" fill="rgba(212,168,50,.3)"/>
+
+  <!-- DOLL -->
+  <!-- Head - bigger, rounder, more 3D -->
+  <circle cx="214" cy="112" r="22" fill="#1a1a2e"/>
+  <circle cx="214" cy="112" r="22" fill="none" stroke="rgba(80,80,120,.5)" stroke-width="2"/>
+  <!-- Head highlight -->
+  <ellipse cx="208" cy="104" rx="8" ry="6" fill="rgba(255,255,255,.08)"/>
+
+  <!-- X eyes -->
+  <line x1="205" y1="106" x2="210" y2="111" stroke="#e0e0ff" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="210" y1="106" x2="205" y2="111" stroke="#e0e0ff" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="218" y1="106" x2="223" y2="111" stroke="#e0e0ff" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="223" y1="106" x2="218" y2="111" stroke="#e0e0ff" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Smile -->
+  <path d="M207 117 Q214 124 221 117" fill="none" stroke="#e0e0ff" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Neck collar (rope) -->
+  <rect x="207" y="132" width="14" height="10" rx="6" fill="#c8a060"/>
+  <rect x="209" y="133" width="10" height="4" rx="3" fill="rgba(255,220,100,.5)"/>
+
+  <!-- Body -->
+  <rect x="203" y="140" width="22" height="46" rx="11" fill="#1a1a2e"/>
+  <rect x="205" y="141" width="8" height="20" rx="5" fill="rgba(255,255,255,.06)"/>
+
+  <!-- Left arm -->
+  <line x1="203" y1="152" x2="181" y2="174" stroke="#1a1a2e" stroke-width="13" stroke-linecap="round"/>
+  <line x1="203" y1="152" x2="183" y2="172" stroke="rgba(255,255,255,.06)" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Right arm -->
+  <line x1="225" y1="152" x2="247" y2="174" stroke="#1a1a2e" stroke-width="13" stroke-linecap="round"/>
+
+  <!-- Left leg -->
+  <line x1="208" y1="184" x2="198" y2="214" stroke="#1a1a2e" stroke-width="13" stroke-linecap="round"/>
+
+  <!-- Right leg -->
+  <line x1="220" y1="184" x2="230" y2="214" stroke="#1a1a2e" stroke-width="13" stroke-linecap="round"/>
+</svg>
+        <div class="blocks-side"><div class="blocks-box"><div class="block bl-blue">A</div><div class="block bl-green">C</div><div class="block bl-red">E</div><div class="block bl-purple">I</div></div><div class="block bl-red" style="position:absolute;bottom:-8px;right:-12px;width:22px;height:22px;font-size:13px;transform:rotate(-25deg)">S</div></div>
+      </div>
+    </div>
+    <div class="menu-btns-row" id="mobileBtnsRow">
+      <div class="btns">
+        <button class="btn-main btn-play"   onclick="showScreen('pickCategory')">▶ Play Game</button>
+        <button class="btn-main btn-daily"  onclick="startDailyChallenge()">📅 Daily Challenge</button>
+        <button class="btn-main btn-lb-m"   onclick="showLeaderboard()">🏆 Leaderboard</button>
+        <button class="btn-main btn-stats-m" onclick="showStats()">📊 Statistics</button>
+        <button class="btn-main" style="background:linear-gradient(180deg,#e67e22,#c45c00);box-shadow:0 6px 0 #7a3000,0 10px 28px rgba(200,90,0,.45);" onclick="showHistory()">📖 Game History</button>
+        <div class="btn-row">
+          <div class="streak-wrap" id="streakBadgeMobile">🔥 <span id="streakNumMobile">0</span>-day Streak</div>
+        </div>
+      </div>
+    </div>
+    <!-- Desktop 2-col -->
+    <div class="menu-body-desktop" id="desktopMenuBody" style="display:none;">
+      <div class="menu-scene-col"><div class="scene-wrap"><div class="scene">
+        <div class="skull-side">💀</div>
+        <svg class="gallows-svg" viewBox="0 0 300 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="woodH" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0b040"/>
+      <stop offset="40%" stop-color="#d4881a"/>
+      <stop offset="100%" stop-color="#a05e0a"/>
+    </linearGradient>
+    <linearGradient id="woodV" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e8a030"/>
+      <stop offset="50%" stop-color="#c87818"/>
+      <stop offset="100%" stop-color="#9a5808"/>
+    </linearGradient>
+    <linearGradient id="woodBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8a030"/>
+      <stop offset="100%" stop-color="#9a5808"/>
+    </linearGradient>
+    <filter id="woodShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="rgba(0,0,0,0.35)"/>
+    </filter>
+  </defs>
+
+  <!-- Base platform -->
+  <rect x="45" y="218" width="210" height="24" rx="8" fill="url(#woodBase)" filter="url(#woodShadow)"/>
+  <rect x="50" y="218" width="200" height="10" rx="5" fill="rgba(255,200,80,.3)"/>
+  <rect x="45" y="228" width="210" height="14" rx="0" fill="rgba(0,0,0,.15)" rx="8"/>
+
+  <!-- Vertical post -->
+  <rect x="96" y="28" width="26" height="194" rx="8" fill="url(#woodV)" filter="url(#woodShadow)"/>
+  <rect x="100" y="30" width="10" height="190" rx="5" fill="rgba(255,200,80,.25)"/>
+
+  <!-- Horizontal beam -->
+  <rect x="94" y="22" width="140" height="26" rx="8" fill="url(#woodH)" filter="url(#woodShadow)"/>
+  <rect x="98" y="24" width="132" height="10" rx="5" fill="rgba(255,220,100,.3)"/>
+
+  <!-- Diagonal brace -->
+  <line x1="122" y1="48" x2="176" y2="106" stroke="#9a5808" stroke-width="16" stroke-linecap="round"/>
+  <line x1="122" y1="48" x2="176" y2="106" stroke="#d4881a" stroke-width="10" stroke-linecap="round"/>
+  <line x1="124" y1="50" x2="174" y2="104" stroke="rgba(255,200,80,.3)" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Rope -->
+  <line x1="214" y1="46" x2="214" y2="82" stroke="#c8a060" stroke-width="5" stroke-linecap="round"/>
+  <!-- Hook ring -->
+  <circle cx="214" cy="88" r="9" fill="none" stroke="#d4a832" stroke-width="4"/>
+  <circle cx="214" cy="88" r="5" fill="rgba(212,168,50,.3)"/>
+
+  <!-- DOLL -->
+  <!-- Head - bigger, rounder, more 3D -->
+  <circle cx="214" cy="112" r="22" fill="#1a1a2e"/>
+  <circle cx="214" cy="112" r="22" fill="none" stroke="rgba(80,80,120,.5)" stroke-width="2"/>
+  <!-- Head highlight -->
+  <ellipse cx="208" cy="104" rx="8" ry="6" fill="rgba(255,255,255,.08)"/>
+
+  <!-- X eyes -->
+  <line x1="205" y1="106" x2="210" y2="111" stroke="#e0e0ff" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="210" y1="106" x2="205" y2="111" stroke="#e0e0ff" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="218" y1="106" x2="223" y2="111" stroke="#e0e0ff" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="223" y1="106" x2="218" y2="111" stroke="#e0e0ff" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Smile -->
+  <path d="M207 117 Q214 124 221 117" fill="none" stroke="#e0e0ff" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Neck collar (rope) -->
+  <rect x="207" y="132" width="14" height="10" rx="6" fill="#c8a060"/>
+  <rect x="209" y="133" width="10" height="4" rx="3" fill="rgba(255,220,100,.5)"/>
+
+  <!-- Body -->
+  <rect x="203" y="140" width="22" height="46" rx="11" fill="#1a1a2e"/>
+  <rect x="205" y="141" width="8" height="20" rx="5" fill="rgba(255,255,255,.06)"/>
+
+  <!-- Left arm -->
+  <line x1="203" y1="152" x2="181" y2="174" stroke="#1a1a2e" stroke-width="13" stroke-linecap="round"/>
+  <line x1="203" y1="152" x2="183" y2="172" stroke="rgba(255,255,255,.06)" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Right arm -->
+  <line x1="225" y1="152" x2="247" y2="174" stroke="#1a1a2e" stroke-width="13" stroke-linecap="round"/>
+
+  <!-- Left leg -->
+  <line x1="208" y1="184" x2="198" y2="214" stroke="#1a1a2e" stroke-width="13" stroke-linecap="round"/>
+
+  <!-- Right leg -->
+  <line x1="220" y1="184" x2="230" y2="214" stroke="#1a1a2e" stroke-width="13" stroke-linecap="round"/>
+</svg>
+        <div class="blocks-side"><div class="blocks-box"><div class="block bl-blue">A</div><div class="block bl-green">C</div><div class="block bl-red">E</div><div class="block bl-purple">I</div></div><div class="block bl-red" style="position:absolute;bottom:-8px;right:-12px;width:22px;height:22px;font-size:13px;transform:rotate(-25deg)">S</div></div>
+      </div></div></div>
+      <div class="menu-btns-col"><div class="menu-btns-row"><div class="btns">
+        <button class="btn-main btn-play"    onclick="showScreen('pickCategory')">▶ Play Game</button>
+        <button class="btn-main btn-daily"   onclick="startDailyChallenge()">📅 Daily Challenge</button>
+        <button class="btn-main btn-lb-m"    onclick="showLeaderboard()">🏆 Leaderboard</button>
+        <button class="btn-main btn-stats-m" onclick="showStats()">📊 Statistics</button>
+        <button class="btn-main" style="background:linear-gradient(180deg,#e67e22,#c45c00);box-shadow:0 6px 0 #7a3000,0 10px 28px rgba(200,90,0,.45);" onclick="showHistory()">📖 Game History</button>
+        <div class="btn-row">
+          <div class="streak-wrap" id="streakBadgeDesktop">🔥 <span id="streakNumDesktop">0</span>-day Streak</div>
+        </div>
+      </div></div></div>
+    </div>
+  </div>
+
+  <!-- ══════════ STEP 1: PICK CATEGORY ══════════ -->
+  <div class="screen pick-screen" id="pickCategory">
+    <div class="pick-header">
+      <button class="back-btn" onclick="showScreen('menu')">←</button>
+      <div class="pick-title">Choose Category</div>
+      <div class="spacer-btn"></div>
+    </div>
+    <div class="pick-grid cols-2">
+      <button class="pick-card c-geo"      onclick="pickCategory('geography')"><span class="card-icon">🌍</span><span class="card-label">Geography</span><span class="card-sub">Countries, Cities, Rivers, Mountains</span></button>
+      <button class="pick-card c-animals"  onclick="pickCategory('animals')"><span class="card-icon">🐾</span><span class="card-label">Animals</span><span class="card-sub">From pets to wild beasts</span></button>
+      <button class="pick-card c-plants"   onclick="pickCategory('plants')"><span class="card-icon">🌿</span><span class="card-label">Plants</span><span class="card-sub">Trees, flowers & herbs</span></button>
+      <button class="pick-card c-elements" onclick="pickCategory('elements')"><span class="card-icon">⚗️</span><span class="card-label">Elements</span><span class="card-sub">Periodic table</span></button>
+    </div>
+  </div>
+
+  <!-- ══════════ STEP 2: PICK SUBCATEGORY (Geography only) ══════════ -->
+  <div class="screen pick-screen" id="pickSubcat">
+    <div class="pick-header">
+      <button class="back-btn" onclick="showScreen('pickCategory')">←</button>
+      <div class="pick-title">Geography</div>
+      <div class="spacer-btn"></div>
+    </div>
+    <div class="breadcrumb"><span class="done">🌍 Geography</span><span class="sep">›</span><span>Subcategory</span></div>
+    <div class="pick-grid cols-2">
+      <button class="pick-card c-countries" onclick="pickSubcat('countries')"><span class="card-icon">🏳️</span><span class="card-label">Countries</span><span class="card-sub">Nations of the world</span></button>
+      <button class="pick-card c-cities"    onclick="pickSubcat('cities')"><span class="card-icon">🏙️</span><span class="card-label">Cities</span><span class="card-sub">World capitals & metropolises</span></button>
+      <button class="pick-card c-rivers"    onclick="pickSubcat('rivers')"><span class="card-icon">🌊</span><span class="card-label">Rivers</span><span class="card-sub">Great rivers of the world</span></button>
+      <button class="pick-card c-mountains" onclick="pickSubcat('mountains')"><span class="card-icon">⛰️</span><span class="card-label">Mountains</span><span class="card-sub">Peaks & ranges</span></button>
+    </div>
+  </div>
+
+  <!-- ══════════ STEP 3: PICK DIFFICULTY ══════════ -->
+  <div class="screen pick-screen" id="pickDifficulty">
+    <div class="pick-header">
+      <button class="back-btn" id="diffBackBtn" onclick="diffGoBack()">←</button>
+      <div class="pick-title">Difficulty</div>
+      <div class="spacer-btn"></div>
+    </div>
+    <div class="breadcrumb" id="diffBreadcrumb"></div>
+    <div class="pick-grid cols-2">
+      <button class="pick-card c-easy"   onclick="pickDifficulty('easy')"><span class="card-icon">😊</span><span class="card-label">Easy</span><span class="card-sub">Short simple words · 8 lives · 2 min</span></button>
+      <button class="pick-card c-medium" onclick="pickDifficulty('medium')"><span class="card-icon">🤔</span><span class="card-label">Medium</span><span class="card-sub">Common words · 7 lives · 90 sec</span></button>
+      <button class="pick-card c-hard"   onclick="pickDifficulty('hard')"><span class="card-icon">😤</span><span class="card-label">Hard</span><span class="card-sub">Tricky words · 6 lives · 70 sec</span></button>
+      <button class="pick-card c-expert" onclick="pickDifficulty('expert')"><span class="card-icon">💀</span><span class="card-label">Expert</span><span class="card-sub">Brutal · 5 lives · 50 sec</span></button>
+    </div>
+  </div>
+
+  <!-- ══════════ GAME ══════════ -->
+  <div class="screen" id="game">
+    <div class="game-inner">
+      <div class="game-col-left" style="width:100%;display:flex;flex-direction:column;align-items:center;">
+        <div class="game-header">
+          <button class="back-btn" onclick="goBackFromGame()">←</button>
+          <div class="category-badge" id="categoryLabel">Animals</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button class="sound-btn" id="soundToggle" onclick="toggleSound()" title="Sound">🔊</button>
+            <div class="lives-row lives-header" id="livesRowHeader"></div>
+          </div>
+        </div>
+        <div class="game-gallows-wrap">
+          <svg id="gameGallows" class="game-gallows" viewBox="0 0 260 230" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gwH" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0b040"/>
+      <stop offset="45%" stop-color="#d4881a"/>
+      <stop offset="100%" stop-color="#a05e0a"/>
+    </linearGradient>
+    <linearGradient id="gwV" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e8a030"/>
+      <stop offset="55%" stop-color="#c87818"/>
+      <stop offset="100%" stop-color="#9a5808"/>
+    </linearGradient>
+    <filter id="gs"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.3)"/></filter>
+  </defs>
+  <!-- Base -->
+  <rect x="35" y="200" width="190" height="22" rx="7" fill="url(#gwH)" filter="url(#gs)"/>
+  <rect x="40" y="200" width="180" height="9" rx="5" fill="rgba(255,200,80,.28)"/>
+  <!-- Vertical post -->
+  <rect x="74" y="18" width="24" height="186" rx="7" fill="url(#gwV)" filter="url(#gs)"/>
+  <rect x="78" y="20" width="9" height="182" rx="4" fill="rgba(255,200,80,.22)"/>
+  <!-- Horizontal beam -->
+  <rect x="72" y="12" width="126" height="24" rx="7" fill="url(#gwH)" filter="url(#gs)"/>
+  <rect x="76" y="14" width="118" height="9" rx="4" fill="rgba(255,220,100,.28)"/>
+  <!-- Diagonal brace -->
+  <line x1="96" y1="36" x2="146" y2="90" stroke="#9a5808" stroke-width="14" stroke-linecap="round"/>
+  <line x1="96" y1="36" x2="146" y2="90" stroke="#d4881a" stroke-width="9" stroke-linecap="round"/>
+  <line x1="98" y1="38" x2="144" y2="88" stroke="rgba(255,200,80,.28)" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Rope -->
+  <line x1="182" y1="34" x2="182" y2="66" stroke="#c8a060" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="182" cy="72" r="8" fill="none" stroke="#d4a832" stroke-width="3.5"/>
+  <circle cx="182" cy="72" r="4" fill="rgba(212,168,50,.25)"/>
+  <!-- Doll group (for shake + fall animation) -->
+  <g id="dollGroup">
+    <circle id="p-head" cx="182" cy="94" r="19" fill="#1a1a2e" opacity="0"/>
+    <rect id="p-collar" x="176" y="111" width="12" height="8" rx="5" fill="#c8a060" opacity="0"/>
+    <rect id="p-body" x="174" y="112" width="16" height="40" rx="8" fill="#1a1a2e" opacity="0"/>
+    <line id="p-larm" x1="174" y1="122" x2="156" y2="142" stroke="#1a1a2e" stroke-width="11" stroke-linecap="round" opacity="0"/>
+    <line id="p-rarm" x1="190" y1="122" x2="208" y2="142" stroke="#1a1a2e" stroke-width="11" stroke-linecap="round" opacity="0"/>
+    <line id="p-lleg" x1="178" y1="150" x2="169" y2="176" stroke="#1a1a2e" stroke-width="11" stroke-linecap="round" opacity="0"/>
+    <line id="p-rleg" x1="186" y1="150" x2="195" y2="176" stroke="#1a1a2e" stroke-width="11" stroke-linecap="round" opacity="0"/>
+    <g id="p-eyes" opacity="0">
+      <line x1="174" y1="89" x2="179" y2="94" stroke="#e0e0ff" stroke-width="3" stroke-linecap="round"/>
+      <line x1="179" y1="89" x2="174" y2="94" stroke="#e0e0ff" stroke-width="3" stroke-linecap="round"/>
+      <line x1="185" y1="89" x2="190" y2="94" stroke="#e0e0ff" stroke-width="3" stroke-linecap="round"/>
+      <line x1="190" y1="89" x2="185" y2="94" stroke="#e0e0ff" stroke-width="3" stroke-linecap="round"/>
+      <path d="M177 100 Q182 106 188 100" fill="none" stroke="#e0e0ff" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>
+        </div>
+        <div class="game-meta-desktop" style="display:none;flex-direction:column;align-items:center;gap:8px;padding-bottom:8px;">
+          <div class="lives-row" id="livesRowLeft"></div>
+          <div class="score-badge">Score: <span id="scoreValLeft">0</span></div>
+        </div>
+      </div>
+      <div class="game-col-right" id="gameColRight" style="display:none;">
+        <div class="category-badge" id="categoryLabelRight" style="margin-bottom:4px;"></div>
+        <div class="word-display" id="wordDisplayRight"></div>
+        <div class="wrong-hint" id="wrongHintRight"></div>
+        <div class="keyboard" id="keyboardRight"></div>
+      </div>
+    </div>
+    <div class="game-meta-mobile" id="gameMetaMobile">
+      <div class="lives-row" id="livesRowMobile"></div>
+      <div class="score-badge">Score: <span id="scoreValMobile">0</span></div>
+    </div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
+    <div class="word-display" id="wordDisplay"></div>
+    <div class="wrong-hint" id="wrongHint"></div>
+    <div class="keyboard" id="keyboard"></div>
+    <div class="overlay" id="overlay">
+      <div class="result-card">
+        <div class="result-emoji" id="resultEmoji"></div>
+        <div class="result-title" id="resultTitle"></div>
+        <div class="result-word" id="resultWord"></div>
+        <div class="result-score-line" id="resultScoreLine"></div>
+        <div class="result-streak" id="resultStreak"></div>
+        <div class="result-btns">
+          <button class="btn-again" id="btnAgain" onclick="playAgain()">Next Word →</button>
+          <button class="btn-lb-result" onclick="showLeaderboard()">🏆 Board</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ STATS ══════════ -->
+  <div class="screen" id="stats">
+    <div class="stats-header">
+      <button class="back-btn" onclick="showScreen('menu')">←</button>
+      <div class="stats-title">📊 Statistics</div>
+      <div class="spacer-btn"></div>
+    </div>
+    <div class="stats-username">
+      <div class="uname" id="statsUsername">Player</div>
+      <div class="uname-label">tap to change name</div>
+    </div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <button class="stats-reset-btn" onclick="resetStats()">🗑️ Reset Statistics</button>
+  </div>
+
+  <!-- ══════════ HISTORY ══════════ -->
+  <div class="screen" id="history">
+    <div class="hist-header">
+      <button class="back-btn" onclick="showScreen('menu')">←</button>
+      <div class="hist-title">📖 Game History</div>
+      <button class="back-btn" onclick="clearHistory()" title="Clear history">🗑️</button>
+    </div>
+    <div class="hist-search-wrap">
+      <input class="hist-input" id="histInput" type="text" placeholder="Enter your name..." maxlength="16" autocomplete="off">
+      <button class="hist-search-btn" onclick="searchHistory()">Search</button>
+    </div>
+    <div class="hist-player-title" id="histPlayerTitle" style="display:none;"></div>
+    <div class="hist-list" id="histList">
+      <div class="hist-empty">Enter your name above to see your game history 👆</div>
+    </div>
+  </div>
+
+  <!-- ══════════ LEADERBOARD ══════════ -->
+  <div class="screen" id="leaderboard">
+    <div class="lb-header">
+      <button class="back-btn" onclick="showScreen('menu')">←</button>
+      <div class="lb-title">🏆 Leaderboard</div>
+      <button class="back-btn" onclick="clearLeaderboard()" title="Clear all">🗑️</button>
+    </div>
+    <div class="lb-filter" id="lbFilter">
+      <button class="lb-filter-btn active" data-f="all"       onclick="filterLb('all',this)">All</button>
+      <button class="lb-filter-btn" data-f="animals"    onclick="filterLb('animals',this)">🐾</button>
+      <button class="lb-filter-btn" data-f="plants"     onclick="filterLb('plants',this)">🌿</button>
+      <button class="lb-filter-btn" data-f="elements"   onclick="filterLb('elements',this)">⚗️</button>
+      <button class="lb-filter-btn" data-f="geography"  onclick="filterLb('geography',this)">🌍</button>
+      <button class="lb-filter-btn" data-f="daily"      onclick="filterLb('daily',this)">📅</button>
+    </div>
+    <div class="lb-list" id="lbList"></div>
+  </div>
+</div>
+
+<script>
+/* ════════ WORD BANK ════════ */
+const WORDS = {
+    'geography-countries':{
+    easy:  ['CHAD','CUBA','VATICAN','FIJI','IRAN','IRAQ','LAOS','MALI','OMAN','PERU','TOGO','BENIN','CHILE','CHINA','EGYPT','GHANA','INDIA','ITALY','JAPAN','KENYA','LIBYA','NEPAL','NIGER','QATAR','SPAIN','SUDAN','SYRIA','TONGA','YEMEN','FRANCE','GREECE','GUINEA','GUYANA','ISRAEL','JORDAN','KUWAIT','LATVIA','MEXICO','MONACO','NORWAY','PANAMA','POLAND','RWANDA','SERBIA','SWEDEN','TURKEY','UGANDA','ZAMBIA','BRAZIL','CANADA','ANGOLA','BELIZE','BRUNEI','CYPRUS','MALAWI','BHUTAN','GABON','SAMOA','PALAU','NAURU','NIUE'],
+    medium:['ALBANIA','ALGERIA','PALESTINE','ANDORRA','ARMENIA','AUSTRIA','BAHRAIN','BELARUS','BELGIUM','BOLIVIA','BURUNDI','CROATIA','DENMARK','ECUADOR','ESTONIA','FINLAND','GEORGIA','GERMANY','HUNGARY','ICELAND','IRELAND','LEBANON','LESOTHO','LIBERIA','MOROCCO','MYANMAR','NAMIBIA','NIGERIA','ROMANIA','SOMALIA','TUNISIA','UKRAINE','URUGUAY','VANUATU','VIETNAM','BAHAMAS','COMOROS','ERITREA','ESWATINI','GRENADA','MOLDOVA','SENEGAL','SEYCHELLES','SINT MAARTEN','SWITZERLAND','TANZANIA','THAILAND','CZECHIA','CAMEROON','DJIBOUTI','DOMINICA','ETHIOPIA','HONDURAS','MALDIVES','MONGOLIA','PAKISTAN','PORTUGAL','SLOVAKIA','SLOVENIA','SURINAME','ZIMBABWE','COLOMBIA','MALAYSIA','BULGARIA','CAMBODIA','BOTSWANA','BARBADOS','PARAGUAY'],
+    hard:  ['ARGENTINA','AUSTRALIA','CAPE VERDE','COSTA RICA','GUATEMALA','INDONESIA','LITHUANIA','MAURITIUS','NICARAGUA','SAN MARINO','SINGAPORE','SRI LANKA','VENEZUELA','CAMBODIA','ZIMBABWE','TANZANIA','CAMEROON','PORTUGAL','DJIBOUTI','DOMINICA','ETHIOPIA','HONDURAS','MALAYSIA','MALDIVES','MONGOLIA','PAKISTAN','PARAGUAY','SLOVAKIA','SURINAME','BOTSWANA','BARBADOS','COLOMBIA','BULGARIA','EQUATORIAL GUINEA','NORTH KOREA','SOUTH KOREA','IVORY COAST','SIERRA LEONE','TIMOR LESTE','BURKINA FASO','SOUTH SUDAN','EAST TIMOR','LUXEMBOURG','MOZAMBIQUE','MAURITANIA','KYRGYZSTAN','TAJIKISTAN','UZBEKISTAN','AZERBAIJAN'],
+    expert:['AFGHANISTAN','BANGLADESH','EL SALVADOR','KAZAKHSTAN','MADAGASCAR','NEW ZEALAND','PHILIPPINES','SAUDI ARABIA','SOUTH AFRICA','GUINEA BISSAU','LIECHTENSTEIN','TURKMENISTAN','MARSHALL ISLANDS','PAPUA NEW GUINEA','SOLOMON ISLANDS','TRINIDAD AND TOBAGO','UNITED ARAB EMIRATES','ANTIGUA AND BARBUDA','EQUATORIAL GUINEA','CENTRAL AFRICAN REPUBLIC','DEMOCRATIC REPUBLIC OF CONGO','SAO TOME AND PRINCIPE','SAINT KITTS AND NEVIS','SAINT VINCENT AND THE GRENADINES','BOSNIA AND HERZEGOVINA','NORTH MACEDONIA'],
+  },
+    'geography-cities':{
+    easy:  ['ROME','LIMA','OSLO','BAKU','DOHA','RIGA','KYIV','DUBAI','DELHI','SEOUL','ACCRA','CAIRO','KABUL','LAGOS','MILAN','PARIS','SOFIA','TOKYO','TUNIS','VIENNA','MINSK','AMMAN','DAKAR','DHAKA','HANOI','HAVANA','NIAMEY','RABAT','RIYADH','LUSAKA','MOSCOW','NASSAU','OTTAWA','PRAGUE','BEIRUT','LISBON','ANKARA','ATHENS','BOGOTA','DUBLIN','GENEVA','HARARE','MANILA','MUNICH','NAIROBI','SYDNEY','TEHRAN','TORONTO','WARSAW','ZAGREB','BAMAKO','CONAKRY','FREETOWN','KAMPALA','MAPUTO','MASERU','MBABANE','MORONI','NICOSIA','BEIJING','BERLIN','LONDON','MADRID'],
+    medium:['ABIDJAN','ALGIERS','BAGHDAD','BANGKOK','CARACAS','COLOMBO','JAKARTA','KARACHI','NAYPYIDAW','SANTIAGO','SINGAPORE','TASHKENT','YEREVAN','ASHGABAT','BELGRADE','BRUSSELS','BUDAPEST','CANBERRA','CHISINAU','DUSHANBE','HELSINKI','KINSHASA','LILONGWE','MANAGUA','MONTREAL','MONTEVIDEO','MUSCAT','BISHKEK','DODOMA','GABORONE','ISLAMABAD','KATHMANDU','KIGALI','LIBREVILLE','LOME','LUANDA','MBABANE','MONROVIA','NDJAMENA','NIAMEY','NOUAKCHOTT','NUKU ALOFA','PALIKIR','PARAMARIBO','PHNOM PENH','PORT LOUIS','PORT MORESBY','PRAIA','ROSEAU','SANA A','SUVA','TARAWA','TBILISI','THIMPHU','ULAANBAATAR','VADUZ','VIENTIANE','WINDHOEK','YAOUNDE','ASMARA','ANTANANARIVO','APIA','BANJUL','BRIDGETOWN','FUNAFUTI','HONIARA','JUBA','KINGSTON','MALABO','MALE','MIAMI','DALLAS','HOUSTON','CHICAGO','ATLANTA','DENVER','PHOENIX','SEATTLE','DETROIT','BOSTON','MUMBAI','KOLKATA','CHENNAI','BANGALORE','SHANGHAI','GUANGZHOU','SHENZHEN','CHONGQING','OSAKA','NAGOYA'],
+    hard:  ['AMSTERDAM','BARCELONA','EDINBURGH','FRANKFURT','GUANGZHOU','MELBOURNE','STOCKHOLM','ISTANBUL','MONTREAL','BUDAPEST','SANTIAGO','SINGAPORE','JOHANNESBURG','CASABLANCA','MEDELLIN','GUADALAJARA','MONTERREY','CARTAGENA','VANCOUVER','BRISBANE','PERTH','AUCKLAND','WELLINGTON','CAPE TOWN','DURBAN','PRETORIA','HARARE','DAR ES SALAAM','KAMPALA','ADDIS ABABA','KHARTOUM','MOGADISHU','TRIPOLI','TUNIS','ALGIERS','MARRAKECH','FEZZAN','VLADIVOSTOK','NOVOSIBIRSK','YEKATERINBURG','SAINT PETERSBURG','VALPARAISO','ASUNCION','MONTEVIDEO','PARAMARIBO','GEORGETOWN','CAYENNE','PANAMA CITY','SAN JOSE','TEGUCIGALPA','MANAGUA','SAN SALVADOR','BELMOPAN','PORT AU PRINCE','SANTO DOMINGO','SAN JUAN','KINGSTON','BRIDGETOWN','PORT OF SPAIN','CASTRIES','ROSEAU','BASSETERRE'],
+    expert:['KUALA LUMPUR','ADDIS ABABA','ANTANANARIVO','OUAGADOUGOU','YAMOUSSOUKRO','NGERULMUD','BANDAR SERI BEGAWAN','PORTO NOVO','PORTO ALEGRE','NAYPYIDAW','PHNOM PENH','VIENTIANE','ULAANBAATAR','ASHGABAT','NUKU ALOFA','FUNAFUTI','HONIARA','PORT MORESBY','DILI','THESSALONIKI','EKATERINBURG','VLADIVOSTOK','NOVOSIBIRSK','GUADALAJARA','CARTAGENA','BARRANQUILLA','DAR ES SALAAM','JOHANNESBURG'],
+  },
+    'geography-rivers':{
+    easy:  ['NILE','OHIO','ODER','ELBE','LENA','URAL','SEINE','TIBER','EBRO','RHINE','VOLGA','INDUS','GANGES','DANUBE','THAMES','LOIRE','TAGUS','VISTULA','NIGER','CONGO','MURRAY','DNIEPER','DON','PO','INN','EMS','MAIN','MOSEL','TISZA','PRUT','SIRET','DRAVA','SAVA','SOČA','BUG','SAN','NAREW','WISLA','WESER','RUHR','LIPPE','EGER','MARCH','LEITHA','MURA','DRAU'],
+    medium:['AMAZON','JORDAN','TIGRIS','ORANGE','YELLOW','MEKONG','FRASER','HUDSON','IRTYSH','KOLYMA','PARANA','SENEGAL','GAMBIA','CUBANGO','LIMPOPO','ZAMBEZI','KUNENE','ROVUMA','RUFIJI','RUAHA','KAGERA','TANA','JUBBA','SHEBELLE','AWASH','BLUE NILE','WHITE NILE','ATBARA','SOBAT','UBANGI','KASAI','LOMAMI','SANKURU','KWANGO','KWILU','FIMI','MAI NDOMBE','ORINOCO','MAGDALENA','CAUCA','ATRATO','PATIA','SAN JORGE','CESAR','COLORADO','COLUMBIA','MISSOURI','ARKANSAS','PLATTE','KANSAS','IOWA','WABASH','CUMBERLAND','TENNESSEE','ALABAMA','TOMBIGBEE','PEARL','SABINE','GUADALUPE','BRAZOS','TRINITY','RED RIVER','OUACHITA','WHITE','ST JOHN','CONNECTICUT','DELAWARE','SUSQUEHANNA','POTOMAC','JAMES','ROANOKE','SAVANNAH','ALTAMAHA','CHATTAHOOCHEE','FLINT','SUWANNEE','APALACHICOLA','YUKON','MACKENZIE','PEACE','ATHABASCA','SASKATCHEWAN','WINNIPEG','NELSON','CHURCHILL','HAYES','SEVERN','ALBANY','MOOSE','NOTTAWAY','EASTMAIN','YANGTZE','HEILONG','MIN','HAN','WEI','FEN','JINSHA','LANCANG','NUJIANG','YARLUNG TSANGPO','BRAHMAPUTRA'],
+    hard:  ['EUPHRATES','COLUMBIA','COLORADO','MISSOURI','ZAMBEZI','ORINOCO','SALWEEN','LIMPOPO','MACKENZIE','PARAGUAY','TOCANTINS','ARAGUAIA','SAOFRANCISCO','PARNAIBA','JAGUARIBE','MEARIM','ITAPECURU','GRAJAU','TURIACU','GURUPI','CAPIM','XINGU','TAPAJOS','MADEIRA','PURUS','JURUA','JAVARI','TEFÉ','COARI','SOLIMÕES','NEGRO','JAPURA','PUTUMAYO','NAPO','PASTAZA','MARAÑON','UCAYALI','APURIMAC','URUBAMBA','VILCANOTA','MANTARO','RIMAC','CHILLON','CHANCAY','HUAURA','PATIVILCA','FORTALEZA','SANTA','LACRAMARCA','NEPEÑA','CASMA','HUARMEY','VOLGA','URAL','OB','IRTYSH','YENISEI','ANGARA','LENA','ALDAN','AMUR','KOLYMA','INDIGIRKA','YANA','OMOLOY','ANABAR','KOTUY','POPIGAI','OLENEK','VILYUY','VILUI','MUNA','MARKHA','NYUYA','VITIM','OLEKMA','CHARA','TSIPA','NERCHA','SHILKA','ARGUN','ONON','KHERLEN'],
+    expert:['BRAHMAPUTRA','IRRAWADDY','SHENANDOAH','TOCANTINS','ATHABASCA','OKAVANGO','YUKON','TENNESSEE','MAGDALENA','MISSISSIPPI','PARAGUAY','URUGUAY','PILCOMAYO','BERMEJO','SALADO','PARANA','IGUAZU','PELOTAS','CANOAS','JACUI','CAMAQUA','TUBARAO','ITAJAI','RIBEIRAODOSUL','PARANAPANEMA','TIETE','PIRACICABA','CAPIVARI','CORUMBATAI','JACARE','MOGI GUACU','PARDO','SAPUCAI','VERDE','PARANAIBA','ARAGUARI','PRETO','UBERABA','TEJUCO','BORRACHUDO','PARAOPEBA','VELHAS','DAS MORTES','CORRENTE','CARINHANHA','PARACATU','URUCUIA','ABAETÉ','INDAIÁ','QIANTANG','FUCHUN','CAOCAO','HUAIHE','HAIHE','YONGDING','LUANHE','LIAOHE','HUNHE','TAIZI','DALIAO','ASHI','YITONG','SONGHUA','MUDAN','USSURI','BIKIN','KHOR','ANYUI','OMOLON','ANADYR','VELIKAYA'],
+  },
+    'geography-mountains':{
+    easy:  ['ETNA','FUJI','BLANC','WHITNEY','OLYMPUS','RAINIER','LOGAN','COOK','VESUVIUS','SNOWDON','RUSHMORE','MCKINLEY','ROSA','ELBRUS','DENALI','EVEREST','PILATUS','RIGI','TITLIS','JUNGFRAU','EIGER','MÖNCH','WETTERHORN','SCHRECKHORN','FINSTERAARHORN','LAUTERAARHORN','ALETSCHHORN','BIETSCHHORN','BALMHORN','ALTELS','DOLDENHORN','GSPALTENHORN','MORGENHORN','GROSSHORN','MITTAGHORN','ROTHORN','BREITHORN','LYSKAMM','DUFOURSPITZE','PARROTSPITZE','SIGNALKUPPE','ZUMSTEINSPITZE','MARGHERITA','BALL','SESIA','NORDEND','BALMENHORN','VINCENTPYRAMIDE','LISJOCH','FELIKJOCH','TESTA GRIGIA','ADAM','ARARAT','ATHOS','DANA','EDEN','HOOD','LASSEN','LINCOLN','MORAN','OPTION'],
+    medium:['EVEREST','ELBRUS','DENALI','SNOWDON','VESUVIUS','RUSHMORE','MCKINLEY','WHITNEY','RAINIER','LOGAN','ACONCAGUA','MATTERHORN','KILIMANJARO','MONT BLANC','MONT ROSA','GRAN PARADISO','WEISSHORN','TÄSCHHORN','DOM','LENZSPITZE','NADELHORN','STECKNADELHORN','HOHBERGHORN','DÜRRENHORN','ULRICHSHORN','BALFRINHORN','BALDHORN','WEISSMIES','LAGGINHORN','FLETSCHHORN','SIMELIHORN','PORTJENHORN','MONTE LEONE','HILLEHORN','BORTELHORN','GEBIDUM','MISCHABEL','PORTJENGRAT','CASTORE','POLLUX','SCHWARZHORN','CORNO NERO','PIRAMIDE VINCENT','GIORDANI','SEEWINEN','DUFOUR','NORDEND','ZUMSTEIN','SIGNALKUPPE','MARGHERITA','BALL','PARROT','GNIFETTI','FELIK','TESTA GRIGIA','ROCCIA NERA','BREITHORN','CASTOR','LYSKAMM','GREAT WALL','KOSCIUSZKO','VINSON','KIRKPATRICK','MARKHAM','MILLER','KAPLAN'],
+    hard:  ['ACONCAGUA','MATTERHORN','ANNAPURNA','DHAULAGIRI','MANASLU','KARAKORAM','KILIMANJARO','MONT BLANC','GRAN PARADISO','WEISSHORN','MONTE ROSA','ORIZABA','POPOCATEPETL','IZTACCIHUATL','CITLALTEPETL','TAJUMULCO','CHIRRIPÓ','DUIDA','RORAIMA','PICO DA NEBLINA','PICO BOLIVAR','PICO HUMBOLDT','PICO BONPLAND','PICO LA CONCHA','PICO EL TORO','PICO ESPEJO','PICO MUCUÑUQUE','PICO PIEDRAS BLANCAS','PICO NAIGUATA','PICO CODAZZI','PICO ÁVILA','CERRO AUTANA','CERRO PARU','CERRO ARACAMUNI','CERRO SIPAPO','OJOS DEL SALADO','LLULLAILLACO','TUPUNGATO','PISSIS','MERCEDARIO','CERRO BONETE','INCAHUASI','TRES CRUCES','SOLO','CERRO EL CONDOR','CERRO PENITENTES','CERRO VALLECITOS','CERRO PLATA','CERRO MARMOLEJO','NEVADO SAJAMA','NEVADO ILLIMANI','NEVADO HUAYNA POTOSI','NEVADO CHEAROCO','NEVADO CHACHACOMANI','NEVADO CHILLA','NEVADO PALOMANI','NEVADO COLOLO','NEVADO ANANEA','NEVADO ALLINCAPAC','NEVADO CHIMBOYA','CHIMBORAZO','COTOPAXI','CAYAMBE','ANTISANA','ILLINIZA','TUNGURAHUA','SANGAY','ALTAR','CARIHURASO','QUILINDAÑA','CERRO HERMOSO','HUASCARÁN','YERUPAJÁ','RASAC','JIRISHANCA','RONDOY','NINASHANCA','SIULA GRANDE','SARAPO','CARNICERO','TRAPECIO','PUSCANTURPA','TSACRA','JURAU','NINASCOCHA','CHUNTA','CUYOC','ELIAS','BONA','BLACKBURN','SANFORD','DRUM','WRANGELL','FAIRWEATHER','FORAKER','HUNTER','HUNTINGTON','MOOSE TOOTH','BEAR TOOTH'],
+    expert:['KANGCHENJUNGA','MAKALU','LHOTSE','NANGA PARBAT','BROAD PEAK','GASHERBRUM','SHISHAPANGMA','GYACHUNG KANG','ANNAPURNA','HIMALCHULI','MANASLU','BAUDHA','KANG GURU','DHAULAGIRI','GURJA HIMAL','CHUREN HIMAL','PUTHA HIUNCHULI','DOLPO','KANJIROBA','KANDE HIMAI','SITA CHUCHURA','MUKOT HIMAL','CHANDI HIMAL','CHANGLA HIMAL','NALAKANKAR','GURLA MANDHATA','NAMCHA BARWA','GYALA PERI','KANGTO','NYEGYI KANGSANG','TSANGYANG','HKAKABORAZI','GAMLANG RAZI','PHAONGPYI','DAPHA BUM','KHANG HKUT','TIRICH MIR','ISTORO NAL','SARAGHRAR','UDREN ZOM','KOYO ZOM','BUNI ZOM','THUI AN','LANGAR ZOM','SHUYINJ ZOM','KHORA BORT','KOH E BANDAKA','KOH E URGUND','KOH E KESHNIKHAN','AKHER TSAGH','ISMOIL SOMONI','IBN SINA','KORZHENEVSKAYA','MOSKVINA','EVGENIA KORJENEVSKAYA','KHAN TENGRI','POBEDA','SEMENOV TIANSHANSKY','MARBLE WALL','KHAN'],
+  },
+  animals:{
+    easy:  ['CAT','DOG','COW','PIG','HEN','EEL','EMU','FOX','GNU','YAK','RAM','BOA','JAY','BAT','BEE','OWL','RAT','ELK'],
+    medium:['TIGER','EAGLE','SHARK','WHALE','HORSE','ZEBRA','KOALA','PANDA','CAMEL','LLAMA','BISON','HYENA','SLOTH','VIPER','COBRA','CRANE','GECKO','MOOSE','OTTER','ROBIN','SNAIL','TROUT','WOLF'],
+    hard:  ['PANTHER','DOLPHIN','GORILLA','PENGUIN','FLAMINGO','CHEETAH','LEOPARD','LOBSTER','PIRANHA','WALLABY','HAMSTER','MEERKAT','NARWHAL','OSTRICH','PELICAN','RACCOON','VULTURE','WARTHOG','MONGOOSE'],
+    expert:['PLATYPUS','CROCODILE','CHAMELEON','SALAMANDER','RHINOCEROS','BARRACUDA','WOLVERINE','ARMADILLO','AXOLOTL','CAPYBARA','CASSOWARY','ECHIDNA','MANATEE','OCELOT','PANGOLIN'],
+  },
+  plants:{
+    easy:  ['OAK','FIG','YEW','IVY','PALM','ROSE','FERN','SAGE','MINT','ALOE','REED','MOSS','IRIS','LILY','PINE','PLUM','VINE'],
+    medium:['CACTUS','ORCHID','BAMBOO','CLOVER','MYRTLE','JASMINE','NETTLE','WILLOW','CHERRY','POPLAR','ACACIA','BANANA','BARLEY','DAHLIA','FENNEL','GINGER','GUAVA','HENNA','HOLLY','LILAC','LOTUS','MANGO','MAPLE','OLIVE','PAPAYA'],
+    hard:  ['LAVENDER','MAGNOLIA','HYACINTH','GERANIUM','DAFFODIL','PRIMROSE','AMARANTH','WISTERIA','FOXGLOVE','BEGONIA','BLUEBELL','BURDOCK','CAMOMILE','CATMINT','CLEMATIS','CYCLAMEN','HIBISCUS','MARIGOLD','MARJORAM','OLEANDER','ROSEMARY','TURMERIC'],
+    expert:['CHRYSANTHEMUM','RHODODENDRON','BOUGAINVILLEA','POINSETTIA','PELARGONIUM','AGAPANTHUS','HELICHRYSUM','GYPSOPHILA','SNAPDRAGON'],
+  },
+  elements:{
+    easy:  ['GOLD','IRON','LEAD','ZINC','NEON','ARGON','BORON','RADON','XENON','BARIUM'],
+    medium:['CARBON','OXYGEN','HELIUM','SODIUM','COPPER','SILVER','SULFUR','IODINE','CALCIUM','NICKEL','COBALT','CESIUM','CERIUM','GALLIUM','INDIUM','OSMIUM','RADIUM','SILICON','THORIUM','VANADIUM'],
+    hard:  ['NITROGEN','HYDROGEN','FLUORINE','CHLORINE','BROMINE','URANIUM','MERCURY','ARSENIC','BISMUTH','ANTIMONY','CHROMIUM','EUROPIUM','FERMIUM','GERMANIUM','HAFNIUM','HOLMIUM','LUTETIUM','MANGANESE','NEODYMIUM','PLATINUM','POLONIUM','RHENIUM','RHODIUM','SELENIUM','TERBIUM','TITANIUM','TUNGSTEN','YTTRIUM','ZIRCONIUM'],
+    expert:['EINSTEINIUM','MOLYBDENUM','DYSPROSIUM','GADOLINIUM','PRASEODYMIUM','RUTHERFORDIUM','SEABORGIUM','ROENTGENIUM','COPERNICIUM','DARMSTADTIUM'],
+  },
+};
+
+const BODY_PARTS = ['p-head','p-eyes','p-collar','p-body','p-larm','p-rarm','p-lleg','p-rleg'];
+const ROWS       = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+const LIVES_DIFF = {easy:6,medium:6,hard:6,expert:6};
+const SCORE_DIFF = {easy:50,medium:100,hard:180,expert:300};
+const TIME_LIMIT = {easy:120,medium:90,hard:70,expert:50};
+
+/* STATE */
+let selectedCat    = null;
+let selectedSubcat = null;
+let selectedDiff   = null;
+let currentWord    = '';
+let guessed        = new Set();
+let wrongCount     = 0;
+let maxLives       = 6;
+let score          = 0;
+let streak         = 0;
+let dailyMode      = false;
+let timerInterval  = null;
+let timeLeft       = 90;
+let gameActive     = false;
+let audioCtx       = null;
+let soundEnabled   = true;
+
+/* Session tracking */
+let sessionActive         = false;
+let sessionWords          = 0;
+let sessionScore          = 0;
+let sessionWrongGuesses   = 0;   // wrong letters this session
+let sessionLettersGuessed = 0;   // total letters guessed this session
+let sessionTimeSaved      = 0;   // sum of timeLeft on each win
+
+/* Persistent data keys */
+const STATS_KEY    = 'hangman_stats_v1';
+const USER_KEY     = 'hangman_username_v1';
+
+/* ════════ USERNAME ════════ */
+function getUsername(){ return localStorage.getItem(USER_KEY)||'Random'; }
+function saveUsername(){
+  const val = document.getElementById('usernameInput').value.trim();
+  const name = val || 'Random';
+  localStorage.setItem(USER_KEY, name);
+  document.getElementById('usernameModal').classList.remove('show');
+  if(pendingSessionStart){ pendingSessionStart(); pendingSessionStart=null; }
+}
+let pendingSessionStart = null;
+function promptUsername(cb){
+  // Always start immediately — default name is 'Random'
+  cb();
+}
+document.getElementById('usernameInput')?.addEventListener('keydown',e=>{ if(e.key==='Enter') saveUsername(); });
+
+/* ════════ AUDIO ════════ */
+function getAudio(){ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function playTone(freq,type='sine',dur=0.15,vol=0.3,delay=0){
+  if(!soundEnabled) return;
+  try{
+    const ctx=getAudio(),o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type=type;o.frequency.setValueAtTime(freq,ctx.currentTime+delay);
+    g.gain.setValueAtTime(0,ctx.currentTime+delay);
+    g.gain.linearRampToValueAtTime(vol,ctx.currentTime+delay+0.01);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+delay+dur);
+    o.start(ctx.currentTime+delay);o.stop(ctx.currentTime+delay+dur+0.05);
+  }catch(e){}
+}
+function soundClick()  { playTone(440,'sine',0.04,0.08); }
+function soundCorrect(){ playTone(523,'sine',0.12,0.25); playTone(659,'sine',0.12,0.25,0.1); }
+function soundWrong()  { playTone(180,'sawtooth',0.25,0.3); }
+function soundWin()    { [523,659,784,1047].forEach((f,i)=>playTone(f,'sine',0.18,0.28,i*0.12)); }
+function soundLose()   { [440,330,247,196].forEach((f,i)=>playTone(f,'sawtooth',0.22,0.28,i*0.15)); }
+function toggleSound(){
+  soundEnabled=!soundEnabled;
+  const btn=document.getElementById('soundToggle');
+  if(btn){ btn.textContent=soundEnabled?'🔊':'🔇'; btn.classList.toggle('muted',!soundEnabled); }
+}
+
+/* ════════ CONFETTI ════════ */
+const cCvs=document.getElementById('confettiCanvas'),cCtx=cCvs.getContext('2d');
+let cParts=[],cAnim=null;
+
+/* Colour palettes per category */
+const CAT_CONFETTI_COLS = {
+  'geography-countries': ['#2e86de','#fff','#e74c3c','#f7c531','#3b7ff5'],
+  'geography-cities':    ['#3498db','#e67e22','#fff','#f7c531','#2ecc71'],
+  'geography-rivers':    ['#16a085','#48dbfb','#fff','#2980b9','#1abc9c'],
+  'geography-mountains': ['#7f8c8d','#bdc3c7','#fff','#95a5a6','#f7c531'],
+  'animals':   ['#e74c3c','#f39c12','#2ecc71','#e67e22','#fff'],
+  'plants':    ['#27ae60','#a9dfbf','#f7c531','#2ecc71','#fff'],
+  'elements':  ['#9b59b8','#8e44ad','#d7bde2','#f7c531','#fff'],
+  'daily':     ['#f7c531','#ef3040','#3b7ff5','#2ecc71','#9b59e8'],
+};
+function getCatConfettiCols(){
+  const key = dailyMode ? 'daily' : getWordKey();
+  return CAT_CONFETTI_COLS[key] || ['#f7c531','#ef3040','#3b7ff5','#2ecc71','#9b59e8','#ff6b6b','#48dbfb'];
+}
+
+function startConfetti(){
+  cCvs.width=innerWidth;cCvs.height=innerHeight;cParts=[];
+  const cols = getCatConfettiCols();
+  for(let i=0;i<200;i++) cParts.push({
+    x:Math.random()*cCvs.width, y:Math.random()*-cCvs.height,
+    w:Math.random()*12+4, h:Math.random()*7+3,
+    color:cols[Math.floor(Math.random()*cols.length)],
+    rot:Math.random()*360, rs:(Math.random()-.5)*7,
+    vx:(Math.random()-.5)*4, vy:Math.random()*5+2, alpha:1
+  });
+  if(cAnim) cancelAnimationFrame(cAnim);
+  animConf();
+}
+function animConf(){
+  cCtx.clearRect(0,0,cCvs.width,cCvs.height);
+  let alive=0;
+  cParts.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.rot+=p.rs;
+    if(p.y>cCvs.height*.7) p.alpha-=.014;
+    if(p.alpha>0&&p.y<cCvs.height+20) alive++;
+    cCtx.save();cCtx.globalAlpha=Math.max(0,p.alpha);cCtx.translate(p.x,p.y);cCtx.rotate(p.rot*Math.PI/180);cCtx.fillStyle=p.color;cCtx.fillRect(-p.w/2,-p.h/2,p.w,p.h);cCtx.restore();
+  });
+  if(alive>0) cAnim=requestAnimationFrame(animConf);
+  else cCtx.clearRect(0,0,cCvs.width,cCvs.height);
+}
+
+/* ════════ PARTICLES (correct letter burst) ════════ */
+const pCvs=document.getElementById('particleCanvas');
+const pCtx=pCvs.getContext('2d');
+let pParts=[],pAnim=null;
+function spawnParticles(x,y){
+  pCvs.width=innerWidth; pCvs.height=innerHeight;
+  const cols=['#f7c531','#2ecc71','#3b7ff5','#fff','#9b59e8'];
+  for(let i=0;i<18;i++){
+    const angle=Math.random()*Math.PI*2;
+    const speed=Math.random()*5+2;
+    pParts.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-3,
+      r:Math.random()*5+3,color:cols[Math.floor(Math.random()*cols.length)],alpha:1});
+  }
+  if(!pAnim) animParts();
+}
+function animParts(){
+  pCtx.clearRect(0,0,pCvs.width,pCvs.height);
+  pParts=pParts.filter(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.3; p.alpha-=0.04;
+    if(p.alpha<=0) return false;
+    pCtx.save(); pCtx.globalAlpha=p.alpha;
+    pCtx.fillStyle=p.color; pCtx.beginPath();
+    pCtx.arc(p.x,p.y,p.r,0,Math.PI*2); pCtx.fill();
+    pCtx.restore(); return true;
+  });
+  if(pParts.length>0) pAnim=requestAnimationFrame(animParts);
+  else { pAnim=null; pCtx.clearRect(0,0,pCvs.width,pCvs.height); }
+}
+
+/* Get center of a key button for particle origin */
+function getKeyPos(letter){
+  const btn=document.querySelector(`.key[data-letter="${letter}"]`);
+  if(!btn) return {x:innerWidth/2,y:innerHeight/2};
+  const r=btn.getBoundingClientRect();
+  return {x:r.left+r.width/2, y:r.top+r.height/2};
+}
+function startTimer(){ clearInterval(timerInterval); timeLeft=TIME_LIMIT[selectedDiff]||90; updateTimerBar(); timerInterval=setInterval(()=>{ timeLeft--; updateTimerBar(); if(timeLeft<=0){ clearInterval(timerInterval); if(gameActive) setTimeout(showLoss,300); } },1000); }
+function stopTimer(){ clearInterval(timerInterval); }
+function updateTimerBar(){ const max=TIME_LIMIT[selectedDiff]||90; document.getElementById('timerBar').style.width=(Math.max(0,timeLeft/max)*100)+'%'; }
+
+/* ════════ STREAK ════════ */
+function updateStreakUI(){
+  ['streakNumMobile','streakNumDesktop'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=streak; });
+  if(streak>0){
+    ['streakBadgeMobile','streakBadgeDesktop'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),400); } });
+  }
+}
+
+/* ════════ LEADERBOARD ════════ */
+const LB_KEY='hangman_lb_v3';
+function getLb(){ try{ return JSON.parse(localStorage.getItem(LB_KEY))||[]; }catch(e){ return []; } }
+function saveLb(a){ localStorage.setItem(LB_KEY,JSON.stringify(a)); }
+function addLbEntry(e){ const lb=getLb(); lb.push(e); lb.sort((a,b)=>b.score-a.score); saveLb(lb.slice(0,100)); }
+function clearLeaderboard(){ if(confirm('Clear all scores?')){ saveLb([]); renderLb(lbFilter); } }
+let lbFilter='all';
+function filterLb(f,btn){ lbFilter=f; document.querySelectorAll('.lb-filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.f===f)); renderLb(f); }
+function renderLb(filter){
+  const lb=getLb().filter(e=>filter==='all'||e.cat===filter);
+  const list=document.getElementById('lbList');
+  if(!lb.length){ list.innerHTML='<div class="lb-empty">No scores yet!<br>Go play! 🎮</div>'; return; }
+  const medals=['🥇','🥈','🥉'];
+  const diffLabel={easy:'Easy',medium:'Medium',hard:'Hard',expert:'Expert'};
+  // sort by score desc, take top 10
+  const top=lb.sort((a,b)=>b.score-a.score).slice(0,10);
+  list.innerHTML=top.map((e,i)=>`
+    <div class="lb-row" style="animation-delay:${i*.05}s">
+      <div class="lb-rank">${medals[i]||(i+1)}</div>
+      <div class="lb-info">
+        <div class="lb-cat">${e.catLabel}${e.daily?' · 📅':''} · <span class="lb-diff-badge ${e.diff}">${diffLabel[e.diff]||e.diff}</span></div>
+        <div class="lb-word">${e.username?'👤 '+e.username:''}  ✅ ${e.words} word${e.words!==1?'s':''} solved</div>
+        <div class="lb-date-line">${e.date}</div>
+      </div>
+      <div class="lb-score-wrap">
+        <div class="lb-score">${e.score}</div>
+        <div class="lb-score-label">pts</div>
+      </div>
+    </div>`).join('');
+}
+function showLeaderboard(){ soundClick(); renderLb(lbFilter); showScreen('leaderboard'); }
+
+/* ════════ STATISTICS ════════ */
+function getStats(){
+  try{
+    return JSON.parse(localStorage.getItem(STATS_KEY))||{
+      sessions:0, wins:0, losses:0,
+      totalWords:0, totalWrongGuesses:0, totalLettersGuessed:0,
+      bestStreak:0, bestScore:0, totalScore:0,
+      catCounts:{}, diffCounts:{},
+      totalTimeSaved:0, // time left accumulated (speed bonus proxy)
+    };
+  }
+  catch(e){
+    return {
+      sessions:0, wins:0, losses:0,
+      totalWords:0, totalWrongGuesses:0, totalLettersGuessed:0,
+      bestStreak:0, bestScore:0, totalScore:0,
+      catCounts:{}, diffCounts:{},
+      totalTimeSaved:0,
+    };
+  }
+}
+function saveStats(s){ localStorage.setItem(STATS_KEY,JSON.stringify(s)); }
+function updateStats(won, sessionScoreVal, wordsThisSession, streakVal){
+  const s=getStats();
+  s.sessions = (s.sessions||0) + 1;
+  if(won) s.wins++; else s.losses++;
+  s.totalWords  += wordsThisSession;
+  s.totalScore  += sessionScoreVal;
+  s.totalWrongGuesses   = (s.totalWrongGuesses||0)   + sessionWrongGuesses;
+  s.totalLettersGuessed = (s.totalLettersGuessed||0)  + sessionLettersGuessed;
+  s.totalTimeSaved      = (s.totalTimeSaved||0)       + sessionTimeSaved;
+  if(streakVal > s.bestStreak) s.bestStreak = streakVal;
+  if(sessionScoreVal > s.bestScore) s.bestScore = sessionScoreVal;
+  // Track favourite category
+  const catKey = dailyMode ? 'daily' : getWordKey();
+  s.catCounts = s.catCounts||{};
+  s.catCounts[catKey] = (s.catCounts[catKey]||0) + wordsThisSession;
+  // Track difficulty usage
+  s.diffCounts = s.diffCounts||{};
+  s.diffCounts[selectedDiff] = (s.diffCounts[selectedDiff]||0) + 1;
+  saveStats(s);
+}
+function resetStats(){
+  if(confirm('Reset all statistics?')){
+    saveStats({sessions:0,wins:0,losses:0,totalWords:0,totalWrongGuesses:0,totalLettersGuessed:0,bestStreak:0,bestScore:0,totalScore:0,catCounts:{},diffCounts:{},totalTimeSaved:0});
+    renderStats();
+  }
+}
+function showStats(){
+  soundClick();
+  const name=getUsername();
+  document.getElementById('statsUsername').textContent=name;
+  document.getElementById('statsUsername').onclick=()=>{
+    pendingSessionStart=null;
+    document.getElementById('usernameInput').value=getUsername()==='Random'?'':getUsername();
+    document.getElementById('usernameModal').classList.add('show');
+    setTimeout(()=>document.getElementById('usernameInput').focus(),200);
+  };
+  renderStats();
+  showScreen('stats');
+}
+function renderStats(){
+  const s=getStats();
+  const totalSessions = s.sessions||0;
+  const avgScore = totalSessions>0 ? Math.round(s.totalScore/totalSessions) : 0;
+  const accuracy = s.totalLettersGuessed>0
+    ? Math.round(((s.totalLettersGuessed - (s.totalWrongGuesses||0)) / s.totalLettersGuessed)*100)
+    : 0;
+
+  // Favourite category
+  const catLabels={'geography-countries':'Countries','geography-cities':'Cities','geography-rivers':'Rivers','geography-mountains':'Mountains','animals':'Animals','plants':'Plants','elements':'Elements','daily':'Daily'};
+  const catCounts = s.catCounts||{};
+  const favCatKey = Object.keys(catCounts).sort((a,b)=>catCounts[b]-catCounts[a])[0];
+  const favCat = favCatKey ? (catLabels[favCatKey]||favCatKey) : '—';
+
+  // Favourite difficulty
+  const diffCounts = s.diffCounts||{};
+  const favDiffKey = Object.keys(diffCounts).sort((a,b)=>diffCounts[b]-diffCounts[a])[0];
+  const diffEmoji  = {easy:'🟢',medium:'🟡',hard:'🔴',expert:'💀'};
+  const favDiff = favDiffKey ? (diffEmoji[favDiffKey]||'')+(favDiffKey.charAt(0).toUpperCase()+favDiffKey.slice(1)) : '—';
+
+  const cards=[
+    {icon:'🎮', value:totalSessions,        label:'Sessions'},
+    {icon:'📝', value:s.totalWords||0,       label:'Words Solved'},
+    {icon:'🔥', value:s.bestStreak||0,       label:'Best Streak'},
+    {icon:'⭐', value:s.bestScore||0,        label:'Best Session'},
+    {icon:'💰', value:s.totalScore||0,       label:'Total Points'},
+    {icon:'📊', value:avgScore,              label:'Avg Score'},
+    {icon:'🎯', value:accuracy+'%',          label:'Letter Accuracy'},
+    {icon:'❌', value:s.totalWrongGuesses||0,label:'Wrong Guesses'},
+    {icon:'🌍', value:favCat,               label:'Fav Category'},
+    {icon:'🏅', value:favDiff,              label:'Fav Difficulty'},
+  ];
+  document.getElementById('statsGrid').innerHTML=cards.map((c,i)=>{
+    const isLong = String(c.value).length > 7;
+    return `<div class="stat-card" style="animation-delay:${i*.05}s">
+      <div class="stat-icon">${c.icon}</div>
+      <div class="stat-value${isLong?' small':''}">${c.value}</div>
+      <div class="stat-label">${c.label}</div>
+    </div>`;
+  }).join('');
+}
+let lastDesktop=null;
+/* ════════ WELCOME (first run) ════════ */
+const FIRST_RUN_KEY = 'hangman_firstrun_v1';
+
+function checkFirstRun(){
+  if(localStorage.getItem(FIRST_RUN_KEY)) return; // already seen
+  const modal = document.getElementById('welcomeModal');
+  modal.classList.add('show');
+  setTimeout(()=>document.getElementById('welcomeInput').focus(), 400);
+}
+
+function startFromWelcome(){
+  const val  = (document.getElementById('welcomeInput').value||'').trim();
+  const name = val || 'Random';
+  localStorage.setItem(USER_KEY, name);
+  localStorage.setItem(FIRST_RUN_KEY, '1');
+  document.getElementById('welcomeModal').classList.remove('show');
+  updateStreakUI();
+}
+
+document.getElementById('welcomeInput')?.addEventListener('keydown', e=>{
+  if(e.key==='Enter') startFromWelcome();
+});
+const HIST_KEY='hangman_history_v1';
+function getHistory(){ try{ return JSON.parse(localStorage.getItem(HIST_KEY))||[]; }catch(e){ return []; } }
+function saveHistory(arr){ localStorage.setItem(HIST_KEY,JSON.stringify(arr)); }
+function addHistoryEntry(entry){ const h=getHistory(); h.unshift(entry); saveHistory(h.slice(0,500)); }
+function clearHistory(){ if(confirm('Clear all game history?')){ saveHistory([]); renderHistory(''); } }
+
+function showHistory(){
+  soundClick();
+  const name=getUsername();
+  const inp=document.getElementById('histInput');
+  if(inp&&name) inp.value=name;
+  document.getElementById('histPlayerTitle').style.display='none';
+  document.getElementById('histList').innerHTML='<div class="hist-empty">Enter your name above to see your game history 👆</div>';
+  showScreen('history');
+  if(name) searchHistory();
+}
+function searchHistory(){
+  const name=(document.getElementById('histInput')||{}).value?.trim()||'';
+  if(!name){
+    document.getElementById('histList').innerHTML='<div class="hist-empty">Please enter a name 🔍</div>';
+    document.getElementById('histPlayerTitle').style.display='none';
+    return;
+  }
+  renderHistory(name);
+}
+function renderHistory(name){
+  const list=document.getElementById('histList');
+  const title=document.getElementById('histPlayerTitle');
+  const lower=name.toLowerCase();
+  const rows=getHistory().filter(e=>e.username&&e.username.toLowerCase()===lower);
+  if(!rows.length){
+    title.style.display='none';
+    list.innerHTML=name
+      ?`<div class="hist-empty">No history for "<strong style="color:#fff">${name}</strong>"<br>Play a game first! 🎮</div>`
+      :'<div class="hist-empty">Enter your name 👆</div>';
+    return;
+  }
+  title.style.display='block';
+  title.textContent=`👤 ${rows[0].username}`;
+  const dL={easy:'Easy',medium:'Medium',hard:'Hard',expert:'Expert'};
+  const dC={easy:'rgba(46,160,64,.75)',medium:'rgba(212,160,16,.85)',hard:'rgba(200,30,50,.75)',expert:'rgba(130,30,180,.75)'};
+  list.innerHTML=rows.map((e,i)=>`
+    <div class="hist-row" style="animation-delay:${i*.04}s">
+      <div class="hist-num">${i+1}</div>
+      <div class="hist-info">
+        <div class="hist-cat">${e.catLabel}${e.daily?' · 📅':''}
+          <span style="padding:2px 9px;border-radius:50px;font-size:11px;font-family:'Fredoka One',cursive;color:#fff;background:${dC[e.diff]||'rgba(100,100,100,.6)'}">${dL[e.diff]||e.diff}</span>
+        </div>
+        <div class="hist-words">✅ ${e.words} word${e.words!==1?'s':''} solved</div>
+        <div class="hist-date">${e.date}${e.time?' · '+e.time:''}</div>
+      </div>
+      <div class="hist-score-wrap">
+        <div class="hist-score">${e.score}</div>
+        <div class="hist-score-lbl">pts</div>
+      </div>
+    </div>`).join('');
+}
+document.getElementById('histInput')?.addEventListener('keydown',e=>{ if(e.key==='Enter') searchHistory(); });
+
+function applyLayout(){
+  const desktop=window.innerWidth>=1024;
+  if(desktop===lastDesktop) return;
+  lastDesktop=desktop;
+  const ids=['mobileSceneWrap','mobileBtnsRow'];
+  ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=desktop?'none':''; });
+  const dmb=document.getElementById('desktopMenuBody');
+  if(dmb) dmb.style.display=desktop?'flex':'none';
+
+  const gl=document.querySelector('.game-col-left'),gr=document.getElementById('gameColRight');
+  const metaD=document.querySelector('.game-meta-desktop'),metaM=document.getElementById('gameMetaMobile');
+  const livH=document.getElementById('livesRowHeader');
+  const wd=document.getElementById('wordDisplay'),wh=document.getElementById('wrongHint'),kb=document.getElementById('keyboard');
+  const gs=document.getElementById('game'),overlay=document.getElementById('overlay');
+  const timerWrap=document.querySelector('.timer-bar-wrap');
+
+  if(desktop){
+    gl.style.cssText='flex:0 0 44%;display:flex;flex-direction:column;align-items:center;border-right:1px solid rgba(255,255,255,.14);padding:0 0 16px;';
+    gr.style.display='flex'; metaD.style.display='flex'; metaM.style.display='none';
+    if(livH) livH.style.display='flex'; // show lives in header on desktop
+    if(timerWrap) gr.insertBefore(timerWrap,gr.firstChild);
+    gr.appendChild(wd); gr.appendChild(wh); gr.appendChild(kb);
+    document.querySelector('.game-gallows-wrap').style.cssText='flex:none;padding:8px;display:flex;align-items:center;justify-content:center;width:100%;height:auto;';
+  } else {
+    gl.style.cssText='width:100%;display:flex;flex-direction:column;align-items:center;flex:1;min-height:0;';
+    gr.style.display='none'; metaD.style.display='none'; metaM.style.display='flex';
+    if(livH) livH.style.display='none'; // lives shown in game-meta-mobile instead
+    gs.insertBefore(timerWrap,wd.parentNode===gs?wd:overlay);
+    gs.insertBefore(wd,overlay); gs.insertBefore(wh,overlay); gs.insertBefore(kb,overlay);
+    document.querySelector('.game-gallows-wrap').style.cssText='flex:1;min-height:0;display:flex;align-items:center;justify-content:center;width:100%;';
+  }
+}
+applyLayout();
+window.addEventListener('resize',applyLayout);
+
+/* ════════ SCREEN NAVIGATION ════════ */
+function showScreen(id){ soundClick(); document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+/* ── Step 1: pick category ── */
+function pickCategory(cat){
+  soundClick();
+  selectedCat=cat;
+  selectedSubcat=null;
+  if(cat==='geography'){
+    // Go to subcategory screen
+    showScreen('pickSubcat');
+  } else {
+    // Go directly to difficulty
+    updateDiffBreadcrumb();
+    showScreen('pickDifficulty');
+  }
+}
+
+/* ── Step 2: pick subcategory (Geography only) ── */
+function pickSubcat(sub){
+  soundClick();
+  selectedSubcat=sub;
+  updateDiffBreadcrumb();
+  showScreen('pickDifficulty');
+}
+
+/* ── Update breadcrumb on difficulty screen ── */
+const CAT_LABELS = { geography:'🌍 Geography', animals:'🐾 Animals', plants:'🌿 Plants', elements:'⚗️ Elements' };
+const SUB_LABELS = { countries:'🏳️ Countries', cities:'🏙️ Cities', rivers:'🌊 Rivers', mountains:'⛰️ Mountains' };
+function updateDiffBreadcrumb(){
+  const bc=document.getElementById('diffBreadcrumb');
+  if(!bc) return;
+  if(selectedCat==='geography' && selectedSubcat){
+    bc.innerHTML=`<span class="done">${CAT_LABELS[selectedCat]}</span><span class="sep">›</span><span class="done">${SUB_LABELS[selectedSubcat]}</span><span class="sep">›</span><span>Difficulty</span>`;
+  } else {
+    bc.innerHTML=`<span class="done">${CAT_LABELS[selectedCat]||''}</span><span class="sep">›</span><span>Difficulty</span>`;
+  }
+}
+
+/* Back from difficulty → correct previous screen */
+function diffGoBack(){
+  soundClick();
+  if(selectedCat==='geography') showScreen('pickSubcat');
+  else showScreen('pickCategory');
+}
+
+/* ── Step 3: pick difficulty → start game ── */
+function pickDifficulty(diff){
+  soundClick();
+  selectedDiff=diff;
+  dailyMode=false;
+  startSession();
+}
+
+/* ── Daily challenge ── */
+function dailySeed(){ const d=new Date(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
+function seededPick(arr,seed){ let h=seed^0xdeadbeef; h=Math.imul(h^(h>>>16),0x45d9f3b); h=Math.imul(h^(h>>>16),0x45d9f3b); return arr[Math.abs(h^(h>>>16))%arr.length]; }
+function startDailyChallenge(){
+  soundClick();
+  const keys=Object.keys(WORDS);
+  const seed=dailySeed();
+  const key=seededPick(keys,seed);
+  if(key.startsWith('geography-')){ selectedCat='geography'; selectedSubcat=key.replace('geography-',''); }
+  else { selectedCat=key; selectedSubcat=null; }
+  selectedDiff='medium'; dailyMode=true;
+  startSession();
+}
+
+/* ── Start a fresh session ── */
+function startSession(){
+  score=0; streak=0; sessionWords=0; sessionScore=0;
+  sessionWrongGuesses=0; sessionLettersGuessed=0; sessionTimeSaved=0;
+  sessionActive=true;
+  
+
+/* ════════ PWA SERVICE WORKER ════════ */
+if('serviceWorker' in navigator){
+  const swCode = `
+    const CACHE='hangman-v1';
+    self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.add(location.href)));self.skipWaiting();});
+    self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
+    self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match(e.request))));});
+  `;
+  const blob=new Blob([swCode],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+}
+updateStreakUI(); syncScore();
+  promptUsername(()=>startCountdown());
+}
+
+/* ── End session → save to leaderboard + stats ── */
+function endSession(won, finalStreak){
+  if(!sessionActive || score===0) return;
+  sessionActive=false;
+  const username=getUsername();
+  const now=new Date();
+  const entry={
+    score, words:sessionWords,
+    diff:selectedDiff,
+    cat:dailyMode?'daily':selectedCat,
+    catLabel:dailyMode?'📅 Daily':getCategoryLabel(),
+    date:now.toLocaleDateString(),
+    time:now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+    daily:dailyMode,
+    username,
+  };
+  addLbEntry(entry);
+  addHistoryEntry(entry);
+  updateStats(won, score, sessionWords, finalStreak!==undefined ? finalStreak : streak);
+}
+
+/* ── Back from game → save session ── */
+function goBackFromGame(){
+  stopTimer(); gameActive=false;
+  endSession(sessionWords > 0);
+  if(dailyMode) showScreen('menu');
+  else showScreen('pickDifficulty');
+}
+
+/* ════════ HELPERS ════════ */
+function getWordKey(){ return selectedCat==='geography'?`geography-${selectedSubcat}`:selectedCat; }
+function getCategoryLabel(){
+  const m={'geography-countries':'🏳️ Countries','geography-cities':'🏙️ Cities','geography-rivers':'🌊 Rivers','geography-mountains':'⛰️ Mountains','animals':'🐾 Animals','plants':'🌿 Plants','elements':'⚗️ Elements'};
+  return m[getWordKey()]||'?';
+}
+
+
+/* ════════ COUNTDOWN ════════ */
+function startCountdown(){
+  // Show game screen so player sees gallows behind countdown
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('game').classList.add('active');
+
+  const overlay = document.getElementById('countdownOverlay');
+  overlay.classList.add('show');
+
+  const steps = ['3','2','1','GO!'];
+  let i = 0;
+
+  function tick(){
+    const val   = steps[i];
+    const isGo  = val === 'GO!';
+
+    // Remove old number element
+    const old = overlay.querySelector('.cd-number, .cd-go');
+    if(old) old.remove();
+
+    // Create fresh element to re-trigger CSS animation
+    const el = document.createElement('div');
+    el.className  = isGo ? 'cd-go' : 'cd-number';
+    el.textContent = val;
+    overlay.appendChild(el);
+
+    // Sound
+    if(soundEnabled){
+      if(isGo) playTone(880,'sine',0.18,0.35);
+      else      playTone(300 + i*120,'sine',0.12,0.25);
+    }
+
+    if(isGo){
+      setTimeout(()=>{
+        overlay.classList.remove('show');
+        el.remove();
+        initGame();
+      }, 750);
+    } else {
+      i++;
+      setTimeout(tick, 900);
+    }
+  }
+  tick();
+}
+
+/* ════════ INIT GAME ════════ */
+function initGame(){
+  const key=getWordKey();
+  const pool=WORDS[key]?.[selectedDiff];
+  if(!pool||!pool.length){ console.warn('No words for:', key, selectedDiff); return; }
+  let pick; do{ pick=pool[Math.floor(Math.random()*pool.length)]; } while(pool.length>1&&pick===currentWord);
+  currentWord=pick;
+  guessed=new Set(); wrongCount=0; maxLives=LIVES_DIFF[selectedDiff]; gameActive=true;
+
+  const lbl=dailyMode?'📅 Daily':getCategoryLabel();
+  ['categoryLabel','categoryLabelRight'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=lbl; });
+  BODY_PARTS.forEach(id=>{ const el=document.getElementById(id); if(el){el.style.opacity='0';el.style.transition='';} });
+  document.getElementById('dollGroup').style.transform='';
+  renderLives(); renderWord(); renderKeyboard();
+  document.getElementById('wrongHint').textContent='';
+  document.getElementById('overlay').classList.remove('show');
+  syncScore(); startTimer();
+  showScreen('game');
+}
+
+/* ════════ RENDER ════════ */
+function syncScore(){ ['scoreValLeft','scoreValMobile'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=score; }); }
+function renderLives(){
+  ['livesRowLeft','livesRowMobile','livesRowHeader'].forEach(id=>{
+    const row=document.getElementById(id); if(!row) return;
+    row.innerHTML='';
+    for(let i=0;i<maxLives;i++){ const h=document.createElement('div'); h.className='heart'+(i>=maxLives-wrongCount?' lost':''); h.textContent='❤️'; row.appendChild(h); }
+  });
+}
+function renderWord(){
+  const disp=document.getElementById('wordDisplay'); disp.innerHTML='';
+  for(const ch of currentWord){
+    if(ch===' '){ const sp=document.createElement('div'); sp.style.cssText='width:14px;flex-shrink:0;'; disp.appendChild(sp); continue; }
+    const slot=document.createElement('div');
+    slot.className='letter-slot'+(guessed.has(ch)?' revealed':'');
+    slot.textContent=guessed.has(ch)?ch:''; disp.appendChild(slot);
+  }
+}
+function renderKeyboard(){
+  const kb=document.getElementById('keyboard'); kb.innerHTML='';
+  ROWS.forEach(row=>{
+    const rd=document.createElement('div'); rd.className='key-row';
+    for(const ch of row){ const btn=document.createElement('button'); btn.className='key'; btn.textContent=ch; btn.dataset.letter=ch; btn.onclick=()=>guess(ch,btn); rd.appendChild(btn); }
+    kb.appendChild(rd);
+  });
+}
+
+/* ════════ GUESS ════════ */
+function guess(letter,btn){
+  if(!gameActive||guessed.has(letter)) return;
+  guessed.add(letter); btn.disabled=true;
+  sessionLettersGuessed++;
+  if(currentWord.includes(letter)){
+    btn.classList.add('correct'); soundCorrect();
+    const pos=getKeyPos(letter); spawnParticles(pos.x,pos.y);
+    renderWord();
+    if(isWon()) setTimeout(showWin,500);
+  } else {
+    btn.classList.add('wrong'); wrongCount++; sessionWrongGuesses++;
+    soundWrong(); renderLives(); revealBodyPart(); shakeDoll();
+    const wl=[...guessed].filter(l=>!currentWord.includes(l)&&l!==' ');
+    document.getElementById('wrongHint').textContent=wl.length?'Wrong: '+wl.join(' '):'';
+    if(wrongCount>=maxLives) setTimeout(showLoss,500);
+  }
+}
+function revealBodyPart(){
+  const map=[['p-head','p-eyes','p-collar'],['p-body'],['p-larm'],['p-rarm'],['p-lleg'],['p-rleg']];
+  (map[wrongCount-1]||[]).forEach(id=>{ const el=document.getElementById(id); if(el){el.style.transition='opacity .35s';el.style.opacity='1';} });
+
+}
+
+function shakeDoll(){
+  const d=document.getElementById('dollGroup');
+  d.classList.remove('doll-shake'); void d.offsetWidth; d.classList.add('doll-shake');
+  setTimeout(()=>d.classList.remove('doll-shake'),520);
+}
+function isWon(){ return [...currentWord].every(ch=>ch===' '||guessed.has(ch)); }
+
+/* ════════ SCORE ════════ */
+function calcScore(){ return (SCORE_DIFF[selectedDiff]||100)+(maxLives-wrongCount)*15+Math.floor(timeLeft*.8)+streak*10; }
+
+/* ════════ WIN / LOSE ════════ */
+function showWin(){
+  gameActive=false; stopTimer(); streak++; sessionWords++;
+  sessionTimeSaved += timeLeft;
+  const rs=calcScore(); score+=rs; sessionScore=score;
+  syncScore(); updateStreakUI(); soundWin();
+  document.getElementById('resultEmoji').textContent='🎉';
+  document.getElementById('resultTitle').textContent='YOU WIN!';
+  document.getElementById('resultWord').innerHTML='Word: <span>'+currentWord+'</span>';
+  document.getElementById('resultScoreLine').innerHTML=`+<strong>${rs}</strong> pts &nbsp;|&nbsp; Session: <strong>${score}</strong>`;
+  document.getElementById('resultStreak').textContent=streak>=2?`🔥 ${streak} win streak!`:'';
+  document.getElementById('btnAgain').textContent='Next Word →';
+  // Short delay so player sees the gallows before overlay appears
+  setTimeout(()=>{
+    startConfetti();
+    document.getElementById('overlay').classList.add('show');
+  }, 800);
+}
+function showLoss(){
+  gameActive=false; stopTimer();
+  const finalStreak = streak;
+  streak=0; updateStreakUI(); soundLose();
+
+  for(const ch of currentWord) guessed.add(ch); renderWord();
+  document.getElementById('resultEmoji').textContent='💀';
+  document.getElementById('resultTitle').textContent='GAME OVER';
+  document.getElementById('resultWord').innerHTML='Word: <span>'+currentWord+'</span>';
+  document.getElementById('resultScoreLine').innerHTML=score>0?`Session score: <strong>${score}</strong> pts`:'Better luck next time!';
+  document.getElementById('resultStreak').textContent='';
+  document.getElementById('btnAgain').textContent='Try Again ↺';
+  setTimeout(()=>document.getElementById('overlay').classList.add('show'), 800);
+
+  endSession(false, finalStreak);
+}
+function playAgain(){ soundClick(); startCountdown(); }
+
+/* ════════ KEYBOARD SHORTCUT ════════ */
+document.addEventListener('keydown',e=>{
+  const l=e.key.toUpperCase();
+  if(/^[A-Z]$/.test(l)){ const btn=document.querySelector(`.key[data-letter="${l}"]:not(:disabled)`); if(btn) btn.click(); }
+});
+
+
+
+updateStreakUI();
+checkFirstRun();
+// Close username modal on backdrop click (only if not waiting for name)
+document.getElementById('usernameModal').addEventListener('click',function(e){
+  if(e.target===this && !pendingSessionStart) this.classList.remove('show');
+});
+</script>
+</body>
+</html>
