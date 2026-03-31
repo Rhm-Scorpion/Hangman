@@ -1,5 +1,31 @@
 <!DOCTYPE html>
-
+<!--
+  ╔══════════════════════════════════════════════════════════╗
+  ║                  HANGMAN GAME v1.0                       ║
+  ╠══════════════════════════════════════════════════════════╣
+  ║  Author   : Srdjan                                       ║
+  ║  Built    : March 2026                                   ║
+  ║  Stack    : Vanilla HTML + CSS + JavaScript (no libs)    ║
+  ╠══════════════════════════════════════════════════════════╣
+  ║  FEATURES                                                ║
+  ║  • 4 categories: Geography, Animals, Plants, Elements    ║
+  ║  • Geography subcategories: Countries, Cities,           ║
+  ║    Rivers, Mountains                                     ║
+  ║  • 1,200+ words across 4 difficulty levels               ║
+  ║  • Session-based scoring & leaderboard (localStorage)    ║
+  ║  • Statistics tracking (accuracy, streaks, totals)       ║
+  ║  • Daily Challenge (seeded by date)                      ║
+  ║  • Countdown 3-2-1 GO! before each game                 ║
+  ║  • Animated clouds, confetti, particles                  ║
+  ║  • Web Audio API sound effects                           ║
+  ║  • PWA — installable, works offline                      ║
+  ║  • Fully responsive: mobile, tablet, desktop             ║
+  ╠══════════════════════════════════════════════════════════╣
+  ║  DEPLOY                                                  ║
+  ║  Single file — no build step needed.                     ║
+  ║  Upload hangman.html to any static host.                 ║
+  ╚══════════════════════════════════════════════════════════╝
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +34,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Hangman">
-<link rel="manifest" href="data:application/json,{%22name%22:%22Hangman%22,%22short_name%22:%22Hangman%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%234ab8e8%22,%22theme_color%22:%22%234ab8e8%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%234ab8e8'/%3E%3Ctext y='130' x='50' font-size='110'%3E🪢%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22}]}">
+<link rel="manifest" href="manifest.json">
 <title>Hangman</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
